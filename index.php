@@ -40,7 +40,7 @@ $text = [
     ],
     'en' => [
         'title'             => 'Create multisite',
-        'h2'                => 'Create multisite in 1 minute',
+        'h2'                => 'Create website in 1 minute',
         'sub'               => 'Choose your niche and get a ready-made landing page',
         'niche_label'       => 'Business area',
         'select_default'    => '-- select --',
