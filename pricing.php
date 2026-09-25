@@ -17,7 +17,10 @@ $text = [
         'free_period' => 'навсегда',
         'free_features' => [
             'Создание сайтов за минуту',
-            'Неограниченное количество сайтов',
+            'Сколько нужно сайтов — столько и создавайте',
+            'Подмена контента под UTM-метки',
+            'Определение региона лида',
+            'MultisiteX CRM — лиды со всех сайтов в одном месте',
             'Сбор заявок',
             'Админка для каждого сайта',
         ],
@@ -29,6 +32,13 @@ $text = [
             'Всё из «Бесплатно»',
             'Убрать плашку MultisiteX',
             'Свои картинки',
+            'Настройка дизайна шаблона',
+            'Своя Яндекс.Метрика',
+            'UTM-метки для рекламы',
+            'Готовые ссылки для рекламных кампаний',
+            'Расширенная подмена контента',
+            'Гео-подмена контента под регион',
+            'MultisiteX CRM — расширенная (экспорт, фильтры, статусы)',
             'Аналитика по сайтам',
             'Приоритетная поддержка',
         ],
@@ -44,7 +54,10 @@ $text = [
         'free_period' => 'forever',
         'free_features' => [
             'Create sites in a minute',
-            'Unlimited sites',
+            'As many sites as you need',
+            'Content substitution by UTM tags',
+            'Lead region detection',
+            'MultisiteX CRM — leads from all sites in one place',
             'Lead collection',
             'Admin panel for each site',
         ],
@@ -56,6 +69,13 @@ $text = [
             'Everything in Free',
             'Remove MultisiteX badge',
             'Your own images',
+            'Template design customization',
+            'Your own Yandex.Metrika',
+            'UTM tags for ads',
+            'Ready-made links for ad campaigns',
+            'Extended content substitution',
+            'Geo content substitution by region',
+            'MultisiteX CRM — extended (export, filters, statuses)',
             'Analytics per site',
             'Priority support',
         ],
@@ -199,6 +219,8 @@ $lang_data = $text[$lang] ?? $text['ru'];
             .plan { padding: 24px 20px; }
         }
     </style>
+    <!-- Jivo -->
+    <script src="//code.jivo.ru/widget/jmf4AkbuEc" async></script>
 </head>
 <body>
 <div class="container">
