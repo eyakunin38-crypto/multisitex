@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест 6 дизайнов — Сайт готов</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f2f4f8;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 480px;
+        }
+        .card {
+            width: 100%;
+            padding: 40px 32px;
+            transition: all 0.4s ease;
+            border-radius: 24px;
+        }
+
+        /* ===== ДИЗАЙН 1: Классический ===== */
+        .design-1 {
+            background: #ffffff;
+            border: 1px solid #e8ecf2;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+        .design-1 h2 { font-size: 24px; font-weight: 700; color: #111; text-align: center; }
+        .design-1 .sub { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 24px; }
+        .design-1 .link-row { display: flex; align-items: center; background: #f5f7fa; border-radius: 12px; padding: 4px 4px 4px 16px; margin-bottom: 24px; border: 1px solid #e8ecf2; }
+        .design-1 .link-row .url { font-size: 13px; font-weight: 500; color: #111; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+        .design-1 .link-row .btn-copy { background: transparent; border: none; padding: 8px; cursor: pointer; border-radius: 8px; }
+        .design-1 .link-row .btn-copy:hover { background: #e8ecf2; }
+        .design-1 .link-row .btn-open { background: #111; color: white; padding: 6px 18px; border-radius: 30px; font-size: 12px; font-weight: 500; text-decoration: none; border: none; cursor: pointer; }
+        .design-1 .checklist { margin-bottom: 24px; }
+        .design-1 .checklist .label { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .design-1 .checklist .item { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 14px; color: #111; border-bottom: 1px solid #f0f0f0; }
+        .design-1 .checklist .item:last-child { border-bottom: none; }
+        .design-1 .btn-adaptive { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 30px; font-weight: 500; font-size: 14px; color: #111; text-decoration: none; margin-bottom: 10px; background: transparent; cursor: pointer; }
+        .design-1 .btn-adaptive:hover { background: #f5f7fa; }
+        .design-1 .btn-primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #111; color: white; border-radius: 30px; font-weight: 500; font-size: 14px; border: none; text-decoration: none; cursor: pointer; }
+        .design-1 .btn-primary:hover { background: #2d2d2d; }
+        .design-1 .footer { text-align: center; font-size: 12px; color: #9ca3af; padding-top: 16px; margin-top: 20px; border-top: 1px solid #e8ecf2; }
+        .design-1 .footer strong { color: #111; }
+
+        /* ===== ДИЗАЙН 2: Минималистичный ===== */
+        .design-2 {
+            background: #ffffff;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.02);
+        }
+        .design-2 h2 { font-size: 28px; font-weight: 300; color: #111; text-align: center; letter-spacing: -0.5px; }
+        .design-2 .sub { font-size: 14px; color: #888; text-align: center; margin-bottom: 28px; }
+        .design-2 .link-row { display: flex; align-items: center; background: transparent; border-bottom: 1px solid #eee; padding: 8px 4px 8px 0; margin-bottom: 28px; }
+        .design-2 .link-row .url { font-size: 14px; font-weight: 400; color: #111; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+        .design-2 .link-row .btn-copy { background: transparent; border: none; padding: 8px; cursor: pointer; }
+        .design-2 .link-row .btn-copy:hover { opacity: 0.6; }
+        .design-2 .link-row .btn-open { background: transparent; color: #111; padding: 6px 0; font-size: 13px; font-weight: 400; text-decoration: none; border: none; cursor: pointer; border-bottom: 1px solid #111; }
+        .design-2 .checklist { margin-bottom: 28px; }
+        .design-2 .checklist .label { font-size: 11px; font-weight: 400; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .design-2 .checklist .item { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 14px; color: #111; border-bottom: 1px solid #f0f0f0; }
+        .design-2 .checklist .item:last-child { border-bottom: none; }
+        .design-2 .checklist .item .num { font-size: 12px; color: #ccc; }
+        .design-2 .btn-adaptive { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border: none; border-bottom: 1px solid #eee; font-weight: 400; font-size: 14px; color: #111; text-decoration: none; margin-bottom: 10px; background: transparent; cursor: pointer; }
+        .design-2 .btn-adaptive:hover { border-bottom-color: #111; }
+        .design-2 .btn-primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: transparent; color: #111; border: 1px solid #111; border-radius: 0; font-weight: 400; font-size: 14px; text-decoration: none; cursor: pointer; }
+        .design-2 .btn-primary:hover { background: #111; color: white; }
+        .design-2 .footer { text-align: center; font-size: 12px; color: #aaa; padding-top: 16px; margin-top: 24px; border-top: 1px solid #f0f0f0; }
+        .design-2 .footer strong { color: #111; font-weight: 400; }
+
+        /* ===== ДИЗАЙН 3: Тёмный ===== */
+        .design-3 {
+            background: #1a1f2e;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .design-3 h2 { font-size: 24px; font-weight: 600; color: #ffffff; text-align: center; }
+        .design-3 .sub { font-size: 14px; color: #a0b0c8; text-align: center; margin-bottom: 24px; }
+        .design-3 .link-row { display: flex; align-items: center; background: #252c3e; border-radius: 12px; padding: 4px 4px 4px 16px; margin-bottom: 24px; border: 1px solid #2a3040; }
+        .design-3 .link-row .url { font-size: 13px; font-weight: 500; color: #fff; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+        .design-3 .link-row .btn-copy { background: transparent; border: none; padding: 8px; cursor: pointer; border-radius: 8px; color: #a0b0c8; }
+        .design-3 .link-row .btn-copy:hover { background: #2a3040; }
+        .design-3 .link-row .btn-open { background: #4a6cf7; color: #fff; padding: 6px 18px; border-radius: 8px; font-size: 12px; font-weight: 500; text-decoration: none; border: none; cursor: pointer; }
+        .design-3 .checklist { margin-bottom: 24px; }
+        .design-3 .checklist .label { font-size: 12px; font-weight: 600; color: #a0b0c8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .design-3 .checklist .item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #252c3e; border-radius: 8px; margin-bottom: 6px; font-size: 14px; color: #d0d8e8; }
+        .design-3 .checklist .item .num { font-size: 12px; font-weight: 500; color: #4a6cf7; }
+        .design-3 .btn-adaptive { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border: 1px solid #3a4050; border-radius: 8px; font-weight: 500; font-size: 14px; color: #fff; text-decoration: none; margin-bottom: 10px; background: transparent; cursor: pointer; }
+        .design-3 .btn-adaptive:hover { background: #2a3040; }
+        .design-3 .btn-primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #4a6cf7; color: #fff; border-radius: 8px; font-weight: 500; font-size: 14px; border: none; text-decoration: none; cursor: pointer; }
+        .design-3 .btn-primary:hover { background: #5a7cf7; }
+        .design-3 .footer { text-align: center; font-size: 12px; color: #7a8aa0; padding-top: 16px; margin-top: 20px; border-top: 1px solid #2a3040; }
+        .design-3 .footer strong { color: #4a6cf7; }
+
+        /* ===== ДИЗАЙН 4: Корпоративный ===== */
+        .design-4 {
+            background: #ffffff;
+            border: 2px solid #e0e7ff;
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.06);
+        }
+        .design-4 h2 { font-size: 22px; font-weight: 700; color: #1e1b4b; text-align: center; }
+        .design-4 .sub { font-size: 14px; color: #4f46e5; text-align: center; margin-bottom: 24px; font-weight: 500; }
+        .design-4 .link-row { display: flex; align-items: center; background: #eef2ff; border-radius: 8px; padding: 4px 4px 4px 16px; margin-bottom: 24px; border: 1px solid #c7d2fe; }
+        .design-4 .link-row .url { font-size: 13px; font-weight: 500; color: #1e1b4b; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+        .design-4 .link-row .btn-copy { background: transparent; border: none; padding: 8px; cursor: pointer; border-radius: 8px; color: #4f46e5; }
+        .design-4 .link-row .btn-copy:hover { background: #dbeafe; }
+        .design-4 .link-row .btn-open { background: #4f46e5; color: #fff; padding: 6px 18px; border-radius: 6px; font-size: 12px; font-weight: 500; text-decoration: none; border: none; cursor: pointer; }
+        .design-4 .checklist { margin-bottom: 24px; }
+        .design-4 .checklist .label { font-size: 12px; font-weight: 600; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .design-4 .checklist .item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f8fafc; border-radius: 6px; margin-bottom: 6px; font-size: 14px; color: #312e81; border-left: 3px solid #4f46e5; }
+        .design-4 .checklist .item .num { font-size: 12px; font-weight: 600; color: #4f46e5; }
+        .design-4 .btn-adaptive { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border: 1px solid #818cf8; border-radius: 6px; font-weight: 500; font-size: 14px; color: #4f46e5; text-decoration: none; margin-bottom: 10px; background: transparent; cursor: pointer; }
+        .design-4 .btn-adaptive:hover { background: #eef2ff; }
+        .design-4 .btn-primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #4f46e5; color: #fff; border-radius: 6px; font-weight: 500; font-size: 14px; border: none; text-decoration: none; cursor: pointer; }
+        .design-4 .btn-primary:hover { background: #4338ca; }
+        .design-4 .footer { text-align: center; font-size: 12px; color: #818cf8; padding-top: 16px; margin-top: 20px; border-top: 1px solid #e0e7ff; }
+        .design-4 .footer strong { color: #4f46e5; }
+
+        /* ===== ДИЗАЙН 5: Мягкий ===== */
+        .design-5 {
+            background: #ffffff;
+            border: 1px solid #fce7f3;
+            box-shadow: 0 8px 24px rgba(219, 39, 119, 0.04);
+            border-radius: 32px;
+        }
+        .design-5 h2 { font-size: 24px; font-weight: 600; color: #831843; text-align: center; }
+        .design-5 .sub { font-size: 14px; color: #db2777; text-align: center; margin-bottom: 24px; }
+        .design-5 .link-row { display: flex; align-items: center; background: #fdf2f8; border-radius: 16px; padding: 4px 4px 4px 16px; margin-bottom: 24px; border: 1px solid #fbcfe8; }
+        .design-5 .link-row .url { font-size: 13px; font-weight: 500; color: #831843; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+        .design-5 .link-row .btn-copy { background: transparent; border: none; padding: 8px; cursor: pointer; border-radius: 8px; color: #db2777; }
+        .design-5 .link-row .btn-copy:hover { background: #fce7f3; }
+        .design-5 .link-row .btn-open { background: #db2777; color: #fff; padding: 6px 18px; border-radius: 16px; font-size: 12px; font-weight: 500; text-decoration: none; border: none; cursor: pointer; }
+        .design-5 .checklist { margin-bottom: 24px; }
+        .design-5 .checklist .label { font-size: 12px; font-weight: 600; color: #db2777; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .design-5 .checklist .item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #fdf2f8; border-radius: 12px; margin-bottom: 6px; font-size: 14px; color: #831843; }
+        .design-5 .checklist .item .num { font-size: 12px; font-weight: 600; color: #f472b6; }
+        .design-5 .btn-adaptive { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border: 1px solid #f472b6; border-radius: 16px; font-weight: 500; font-size: 14px; color: #db2777; text-decoration: none; margin-bottom: 10px; background: transparent; cursor: pointer; }
+        .design-5 .btn-adaptive:hover { background: #fdf2f8; }
+        .design-5 .btn-primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: #db2777; color: #fff; border-radius: 16px; font-weight: 500; font-size: 14px; border: none; text-decoration: none; cursor: pointer; }
+        .design-5 .btn-primary:hover { background: #be185d; }
+        .design-5 .footer { text-align: center; font-size: 12px; color: #f472b6; padding-top: 16px; margin-top: 20px; border-top: 1px solid #fce7f3; }
+        .design-5 .footer strong { color: #db2777; }
+
+        /* ===== ДИЗАЙН 6: Стиль главной ===== */
+        .design-6 {
+            background: #ffffff;
+            border: 1px solid #e8ecf2;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .design-6 h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111;
+            text-align: center;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+        .design-6 .sub {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .design-6 .link-row {
+            display: flex;
+            align-items: center;
+            background: #f5f7fa;
+            border-radius: 10px;
+            padding: 4px 4px 4px 16px;
+            margin-bottom: 24px;
+            border: 1px solid #e8ecf2;
+        }
+        .design-6 .link-row .url {
+            font-size: 13px;
+            font-weight: 500;
+            color: #111;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .design-6 .link-row .btn-copy {
+            background: transparent;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            color: #666;
+            transition: background 0.2s;
+        }
+        .design-6 .link-row .btn-copy:hover {
+            background: #e8ecf2;
+        }
+        .design-6 .link-row .btn-open {
+            background: #111;
+            color: #fff;
+            padding: 6px 18px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .design-6 .link-row .btn-open:hover {
+            background: #2d2d2d;
+        }
+        .design-6 .checklist { margin-bottom: 24px; }
+        .design-6 .checklist .label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .design-6 .checklist .item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            font-size: 14px;
+            color: #111;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .design-6 .checklist .item:last-child {
+            border-bottom: none;
+        }
+        .design-6 .checklist .item .num {
+            font-size: 12px;
+            font-weight: 500;
+            color: #2563eb;
+        }
+        .design-6 .btn-adaptive {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #111;
+            text-decoration: none;
+            margin-bottom: 10px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .design-6 .btn-adaptive:hover {
+            background: #f5f7fa;
+        }
+        .design-6 .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            background: #111;
+            color: #fff;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            border: none;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .design-6 .btn-primary:hover {
+            background: #2d2d2d;
+        }
+        .design-6 .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            padding-top: 16px;
+            margin-top: 20px;
+            border-top: 1px solid #e8ecf2;
+        }
+        .design-6 .footer strong {
+            color: #111;
+        }
+        .design-6 .icon {
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        /* ===== ПЕРЕКЛЮЧАТЕЛЬ ===== */
+        .theme-switcher {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 14px;
+            border: 1px solid #e8ecf2;
+            width: 100%;
+        }
+        .theme-switcher button {
+            background: #f5f7fa;
+            border: 1px solid #e8ecf2;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .theme-switcher button.active {
+            background: #1a1a1a;
+            color: white;
+            border-color: #1a1a1a;
+        }
+        .theme-switcher button:hover:not(.active) {
+            background: #e8ecf2;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.25s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        .icon { font-size: 28px; text-align: center; margin-bottom: 6px; display: block; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="card design-1" id="designCard">
+        <span class="icon" id="iconEl">✓</span>
+        <h2 id="titleEl">Сайт готов</h2>
+        <p class="sub" id="subEl">Ваш лендинг доступен по ссылке</p>
+
+        <div class="link-row">
+            <span class="url" id="siteUrlDisplay">multisitex.com/sites/kuhni15</span>
+            <button class="btn-copy" id="copyBtn" title="Копировать">📋</button>
+            <a href="https://multisitex.com/sites/kuhni15" target="_blank" class="btn-open" id="openBtn">Открыть</a>
+        </div>
+
+        <div class="checklist">
+            <div class="label" id="checklistLabel">Что дальше</div>
+            <div class="item" id="item1"><span class="num">01</span> Настроить сбор заявок</div>
+            <div class="item" id="item2"><span class="num">02</span> Запустить рекламу</div>
+            <div class="item" id="item3"><span class="num">03</span> Получить первых клиентов</div>
+        </div>
+
+        <a href="#" class="btn-adaptive" id="adaptiveBtn">📱 Проверить адаптивность</a>
+        <a href="https://multisitex.com/sites/kuhni15" target="_blank" class="btn-primary" id="goBtn">Перейти на сайт</a>
+
+        <div class="footer" id="footerNote">
+            30 дней тестового периода<br>
+            <strong id="footerStrong">Оплатите тариф «Старт»</strong> — и сайт останется с вами
+        </div>
+    </div>
+
+    <div class="theme-switcher">
+        <button class="active" data-design="1">Дизайн 1</button>
+        <button data-design="2">Дизайн 2</button>
+        <button data-design="3">Дизайн 3</button>
+        <button data-design="4">Дизайн 4</button>
+        <button data-design="5">Дизайн 5</button>
+        <button data-design="6">Дизайн 6 (главная)</button>
+    </div>
+</div>
+
+<div class="toast" id="toast">Ссылка скопирована</div>
+
+<script>
+    // ======= КОПИРОВАНИЕ =======
+    const copyBtn = document.getElementById('copyBtn');
+    const urlDisplay = document.getElementById('siteUrlDisplay');
+    const toast = document.getElementById('toast');
+
+    copyBtn.addEventListener('click', function() {
+        const fullUrl = 'https://' + urlDisplay.textContent.trim();
+        navigator.clipboard.writeText(fullUrl).then(() => {
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = fullUrl;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+        });
+    });
+
+    // ======= ПЕРЕКЛЮЧЕНИЕ ДИЗАЙНОВ =======
+    function applyDesign(num) {
+        const card = document.getElementById('designCard');
+        card.className = 'card design-' + num;
+        document.querySelectorAll('.theme-switcher button').forEach(b => {
+            b.classList.toggle('active', b.dataset.design == num);
+        });
+    }
+
+    document.querySelectorAll('.theme-switcher button').forEach(b => {
+        b.addEventListener('click', function() {
+            applyDesign(this.dataset.design);
+        });
+    });
+
+    // ======= ЗАГЛУШКИ ДЛЯ ДЕМО =======
+    document.getElementById('adaptiveBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('🔗 Проверка адаптивности: https://iloveadaptive.com/ru/url/https%3A%2F%2Fmultisitex.com%2Fsites%2Fkuhni15%2F');
+    });
+
+    applyDesign(1);
+</script>
+
+</body>
+</html>

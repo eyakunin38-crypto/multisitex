@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаблон создаётся</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 50px 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 2rem;
+            color: #1e2a3a;
+            margin-bottom: 20px;
+        }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.1rem;
+            color: #4a5568;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .phone {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0d6efd;
+            text-decoration: none;
+            display: inline-block;
+            padding: 10px 30px;
+            border: 2px solid #0d6efd;
+            border-radius: 60px;
+            transition: all 0.2s;
+        }
+        .phone:hover {
+            background: #0d6efd;
+            color: white;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .footer a {
+            color: #0d6efd;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">✅</div>
+        <h1>Ваш сайт успешно создан</h1>
+        <p>Заявка на создание нового шаблона принята.<br>Мы свяжемся с вами в ближайшее время.</p>
+        <p>Ваш телефон для связи:</p>
+        <a href="tel:{Phone}" class="phone">{Phone}</a>
+        <div class="footer">
+        </div>
+    </div>
+</body>
+</html>

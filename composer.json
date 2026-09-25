@@ -1,0 +1,6 @@
+{
+    "require": {
+        "phpmailer/phpmailer": "^7.1",
+        "yoomoney/yookassa-sdk-php": "^3.15"
+    }
+}

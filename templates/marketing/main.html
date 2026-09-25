@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="<php:keywod>, <php:Region>">
+    <meta name="description" content="Привлечение клиентов из Интернет (для малого и среднего бизнеса). Бесплатно создадим маркетинговую стратегию При наличии свободного маркетолога. Вы получите самый оптимальный маркетинг для вашего бизнеса, потому что в маркетинге мы более 20 лет.">
+    <link rel="icon" href="img/yes_favicon.ico" type="image/x-icon">
+    <title><php:Header> | Встреча с маркетологом в день обращения</title>
+    <style>
+        * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; }
+        body { margin: 0; padding: 0; overflow-x: hidden; background: #fff; }
+        .btn-price { position: relative; z-index: 1000; pointer-events: auto; cursor: pointer; background-color: #7a2236; color: #fff; padding: 12px 30px; border-radius: 30px; display: inline-block; text-decoration: none; font-weight: bold; transition: all 0.3s ease; border: none; }
+        .btn-price:hover { background-color: #5a1829; color: #fff; }
+        .header { background: #f8f9fa; padding: 20px 0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .row { display: flex; flex-wrap: wrap; margin: 0 -15px; }
+        .col-12, .col-md-5, .col-md-7, .col-lg-4, .col-lg-6, .col-md-6 { width: 100%; padding: 0 15px; }
+        img { max-width: 100%; height: auto; display: block; }
+        .dialog { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; }
+        .dialog__content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; max-width: 95%; width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .main_title_corrector_of_title_of_page_stranitca { font-size: clamp(1.5rem, 4vw, 2.5rem); line-height: 1.2; margin: 0 0 1rem 0; }
+        .title_corrector_of_title_of_page_stranitca { font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.4; }
+        .btn-lg { padding: 12px 30px; font-size: 1.1rem; margin: 1rem 0; width: 100%; max-width: 300px; }
+        .section-header { text-align: center; margin-bottom: 40px; }
+        .section-header h2 { font-size: 2rem; margin-bottom: 10px; }
+        .values { padding: 60px 0; background: #fff; }
+        .values .box { text-align: center; padding: 30px; background: #f8f9fa; border-radius: 10px; margin-bottom: 20px; }
+        .portfolio { padding: 60px 0; background: #f8f9fa; }
+        .portfolio-container { display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; }
+        .portfolio-item { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: calc(50% - 15px); margin-bottom: 30px; }
+        .portfolio-img { background: #7a2236; color: white; padding: 20px; font-size: 1.5rem; font-weight: bold; text-align: center; }
+        .portfolio-content { padding: 20px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .stat-column { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .stat-value { font-size: 1.3rem; font-weight: bold; margin: 5px 0; }
+        .stat-value.before { color: #6c757d; }
+        .stat-value.after { color: #28a745; }
+        .highlight-badge { display: inline-block; background: #ffc107; color: #000; padding: 5px 15px; border-radius: 20px; }
+        .key-results { background: #f1f1f1; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .key-results ul { margin: 10px 0 0 20px; }
+        .cta-button { display: inline-block; background: #7a2236; color: white; padding: 10px 25px; border-radius: 30px; text-decoration: none; margin-top: 20px; cursor: pointer; border: none; }
+        .cta-button:hover { background: #5a1829; color: white; }
+        .pricing { padding: 60px 0; background: #fff; }
+        .pricing-item { background: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px; height: 100%; }
+        .pricing-item ul { list-style: none; padding: 0; margin: 20px 0; text-align: left; }
+        .pricing-item ul li { margin-bottom: 10px; }
+        .footer { text-align: center; padding: 30px 0; background: #2c2c2c; color: white; margin-top: 40px; }
+        /* Стили для формы */
+        #nsomedialog-form input,
+        #nsomedialog-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        #nsomedialog-form button,
+        #nsomedialog-form input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background: #7a2236;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        #nsomedialog-form button:hover,
+        #nsomedialog-form input[type="submit"]:hover {
+            background: #5a1829;
+        }
+        @media (min-width: 768px) {
+            .col-md-5 { width: 41.666%; }
+            .col-md-7 { width: 58.333%; }
+            .col-md-6 { width: 50%; }
+            .col-lg-4 { width: 33.333%; }
+            .col-lg-6 { width: 50%; }
+        }
+        @media (max-width: 768px) {
+            .portfolio-item { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="row row_of_tel_up_part_corrector" style="display: flex;">
+                <div class="col-sm-12 col-md-6"><p>Маркетинговое агентство Yakunin Marketing</p></div>
+                <div class="col-sm-12 col-md-6" style="margin: 0 40px;"><p style="text-align: right;"><i class="glyphicon glyphicon-earphone"></i><a class="telephone_number" href="tel:<php:Phone>"><php:Phone></a></p></div>
+            </div>
+            <div class="row title_of_page_stranitca">
+                <div class="col-12 col-md-5 prew_part_corrector">
+                    <h1 class="main_title_corrector_of_title_of_page_stranitca"><php:Header></h1>
+                    <h1 class="tn-atom title_corrector_of_title_of_page_stranitca">Привлечение клиентов из Интернет (для малого и среднего бизнеса)<br><span style="color: rgb(122, 34, 54);">Бесплатно создатим маркетинговую стратегию</span> При наличии свободного маркетолога.<br><br><span style="color: rgb(122, 34, 54);">Вы получите самый оптимальный маркетинг для вашего бизнеса,</span><span style="color: rgb(122, 34, 54);"> потому что в маркетинге мы более 20 лет.</span></h1>
+                    <a class="btn btn-price btn-lg" data-dtitle="Хотите клиентов за 24 часа?" data-dbutton="<php:button>" data-dzaya="<php:button> <php:Header>" data-dyam="lead"><php:button></a>
+                </div>
+                <div class="col-12 col-md-7"><div style="width: 100%; height: auto; aspect-ratio: 4/3;"><img style="width: 100%; height: 100%; object-fit: cover;" src="<php:Image>" alt="картинка из базы" loading="eager" width="600" height="450"></div></div>
+            </div>
+        </div>
+    </header>
+    <section class="values">
+        <div class="container">
+            <div class="section-header"><h2>Наши ценности</h2><p>Какие цели мы ставим при работе с клиентами</p></div>
+            <div class="row">
+                <div class="col-lg-4"><div class="box"><img src="assets/img/values-1.png" alt="100% конверсия"><h3>100% конверсия сайта с рекламы</h3><p>Стремимся превратить каждый клик по Вашей рекламе в клиента для Вашего бизнеса</p></div></div>
+                <div class="col-lg-4"><div class="box"><img src="assets/img/values-2.png" alt="Запуск за 24 часа"><h3>Запуск за 24 часа</h3><p>Вы получаете высококонверсионный сайт в срок до 24 часов или бесплатно.</p></div></div>
+                <div class="col-lg-4"><div class="box"><img src="assets/img/values-3.png" alt="Сохраняем клиентов"><h3>Сохраняем клиентов</h3><p>Все заявки с Вашего сайта платформы надежно хранятся в облачной CRM</p></div></div>
+            </div>
+        </div>
+    </section>
+    <section class="portfolio">
+        <div class="container">
+            <div class="section-header"><h2>Реальные кейсы</h2><p>Убедитесь в эффективности нашей платформы на примере реальных проектов</p></div>
+            <div class="portfolio-container">
+                <div class="portfolio-item"><div class="portfolio-img">ВСЕМАРКЕТ</div><div class="portfolio-content"><h4>Запуск оптового направления с нуля</h4><p>Сеть магазинов бытовой техники (16 магазинов)</p><div class="stats-grid"><div class="stat-column before">Выручка розница (было)<br>600 тыс. руб/мес</div><div class="stat-column before">Выручка опт (было)<br>0 руб/мес</div><div class="stat-column after">Выручка розница (стало)<br>800 тыс. руб/мес</div><div class="stat-column after">Выручка опт (стало)<br>10 млн руб/мес</div></div><div class="highlight-badge">Запуск за 5 часов</div><div class="key-results"><strong>Результаты первого дня:</strong><ul><li>28 оптовых заявок</li><li>Сумма заявок: 20+ млн рублей</li><li>Расход на рекламу: 524 рубля</li><li>Стоимость заявки: 18,23 рубля</li></ul></div></div></div>
+                <div class="portfolio-item"><div class="portfolio-img">АЗАЛИЯ</div><div class="portfolio-content"><h4>Оптовый центр цветов</h4><p>17 лет на рынке, запуск интернет-направления</p><div class="stats-grid"><div class="stat-column before">Менеджеры (было)<br>2<br>заявки по сарафану</div><div class="stat-column after">Менеджеры (стало)<br>34<br>3000 лидов в месяц</div></div><div class="highlight-badge">Запуск за 10 часов</div><div class="key-results"><strong>Уникальный случай:</strong><ul><li>Через 3 дня после запуска попросили приостановить рекламу</li><li>Не успевали обрабатывать заявки</li><li>Рост команды с 2 до 34 менеджеров</li><li>3000 лидов в месяц</li></ul></div><p><strong>Результат:</strong> Полная загрузка отдела продаж за 3 дня</p></div></div>
+            </div>
+            <div class="text-center mt-4"><a href="#" class="cta-button btn-price" data-dtitle="Хотите такие же результаты?" data-dbutton="<php:button>" data-dzaya="Заявка на консультацию" data-dyam="lead">Получить консультацию</a></div>
+        </div>
+    </section>
+    <section class="pricing">
+        <div class="container">
+            <div class="section-header"><h2>ТАРИФЫ</h2><p>Выберите уровень сопровождения вашего бизнеса</p></div>
+            <div class="row">
+                <div class="col-lg-6 col-md-6">
+                    <div class="pricing-item">
+                        <h3>МАРКЕТИНГ ПОД КЛЮЧ</h3>
+                        <ul>
+                            <li>Облачный мультисайт</li>
+                            <li>Настройка Яндекс Директ</li>
+                            <li>Сквозная аналитика</li>
+                            <li>Интеграция с CRM</li>
+                            <li>Персональный менеджер</li>
+                        </ul>
+                        <a href="#" class="cta-button btn-price" data-dtitle="Заказать Маркетинг под ключ" data-dbutton="<php:button>" data-dzaya="МАРКЕТИНГ ПОД КЛЮЧ" data-dyam="lead"><php:button></a>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="pricing-item">
+                        <h3>КОНТЕНТ-ЗАВОД</h3>
+                        <ul>
+                            <li><strong>Всё из тарифа "Маркетинг под ключ"</strong></li>
+                            <li>Постоянное производство контента</li>
+                            <li>Тексты для сайта, блога, соцсетей</li>
+                            <li>Сценарии для видео и подкастов</li>
+                            <li>SEO-статьи и пресс-релизы</li>
+                            <li>Контент-стратегия и редакционный план</li>
+                        </ul>
+                        <a href="#" class="cta-button btn-price" data-dtitle="Заказать Контент-завод" data-dbutton="<php:button>" data-dzaya="КОНТЕНТ-ЗАВОД" data-dyam="lead"><php:button></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <footer class="footer"><div class="container"><div class="copyright">&copy; Copyright <strong>Yakunin Marketing</strong>. All Rights Reserved</div></div></footer>
+    <div id="nsomedialog" class="dialog">
+        <div class="dialog__content">
+            <span class="dialog-close">&times;</span>
+            <div><p class="dtitle"></p>
+            <form id="nsomedialog-form" action="send.php" method="post">
+                <input id="zaya" type="hidden" name="zaya" value="">
+                <input type="hidden" name="region" value="<php:Region>">
+                <input type="hidden" name="header" value="<php:Header>">
+                <input type="hidden" name="keyword" value="<php:Keyword>">
+                <input type="hidden" name="source" value="<php:1st>">
+                <input type="hidden" name="codeheader" value="<php:Codeheader>">
+                <input type="text" name="name" placeholder="Ваше Имя" required>
+                <input id="dphone" type="text" name="phone" placeholder="Ваш телефон" required>
+                <input type="text" name="email" placeholder="Ваш e-mail">
+                <input type="submit" value="Отправить заявку" class="action dbutton">
+            </form></div>
+        </div>
+    </div>
+    <script>
+        function loadScript(src, async = true) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = async;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.body.appendChild(script);
+            });
+        }
+        window.addEventListener('load', function() {
+            Promise.all([
+                loadScript('https://code.jquery.com/jquery-3.6.0.min.js'),
+                loadScript('https://cdnjs.cloudflare.com/ajax/libs/jquery.maskedinput/1.4.1/jquery.maskedinput.min.js')
+            ]).then(() => {
+                $("#dphone").mask("+7 (999) 999-99-99");
+                $('.btn-price').on('click', function(e){
+                    e.preventDefault();
+                    var title = $(this).data('dtitle') || 'Хотите клиентов за 24 часа?';
+                    var button = $(this).data('dbutton') || 'Назначить встречу';
+                    var zaya = $(this).data('dzaya') || 'Заявка с сайта';
+                    $('.dtitle').text(title);
+                    $('.dbutton').val(button);
+                    $('#zaya').val(zaya);
+                    $('#nsomedialog').fadeIn();
+                });
+                $('.dialog-close').on('click', function(){ $('#nsomedialog').fadeOut(); });
+                $(document).on('click', function(e){ if ($(e.target).hasClass('dialog')) $('#nsomedialog').fadeOut(); });
+                $(document).on('keyup', function(e){ if (e.keyCode === 27) $('#nsomedialog').fadeOut(); });
+            });
+        });
+    </script>
+    <script>
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){
+                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+            })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
+            ym(103080074, 'init', { webvisor: true, clickmap: true, accurateTrackBounce: true, trackLinks: true });
+            var jivoScript = document.createElement('script');
+            jivoScript.src = '//code.jivo.ru/widget/kO8womyvRn';
+            jivoScript.async = true;
+            document.head.appendChild(jivoScript);
+        }, 3000);
+    </script>
+</body>
+</html>

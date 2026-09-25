@@ -1,0 +1,14 @@
+config/mail.php
+vendor/
+.env
+*.log
+cache/
+tmp/
+sites_backup_*/
+templates_backup_*/
+mlp_core/
+sites/*/templates/*.jpg
+sites/*/templates/*.png
+sites/*/img/
+.vscode/
+.idea/
