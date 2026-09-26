@@ -12,3 +12,4 @@ sites/*/templates/*.png
 sites/*/img/
 .vscode/
 .idea/
+sites/
