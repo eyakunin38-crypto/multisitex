@@ -4,6 +4,9 @@ header('Content-Type: text/html; charset=utf-8');
 mb_internal_encoding('UTF-8');
 session_start();
 
+// Загружаем тарифы
+$tariffs = require '/var/www/multisitex.com/config/tariffs.php';
+
 $lang = $_GET['lang'] ?? $_COOKIE['lang'] ?? 'ru';
 setcookie('lang', $lang, time() + 86400 * 365, '/');
 
@@ -26,7 +29,6 @@ $text = [
         ],
         'free_btn'    => 'Создать сайт бесплатно',
         'start_title' => 'Старт',
-        'start_price' => '4 990 ₽',
         'start_period'=> 'в месяц',
         'start_features' => [
             'Всё из «Бесплатно»',
@@ -43,6 +45,19 @@ $text = [
             'Приоритетная поддержка',
         ],
         'start_btn'   => 'Активировать Старт',
+        'business_title' => 'Бизнес',
+        'business_period'=> 'в месяц',
+        'business_features' => [
+            'Всё из «Старт»',
+            'Настройка под ключ (шаблон, контент, подмены)',
+            'Привязка своего домена',
+            'Настройка UTM-подмен под клиента',
+            'Настройка телефона, WhatsApp, почты',
+            'Первичная настройка аналитики (Метрика с целями)',
+            'Приоритетная поддержка (ответ за час)',
+            'Персональный менеджер',
+        ],
+        'business_btn' => 'Активировать Бизнес',
         'back'        => '← На главную',
     ],
     'en' => [
@@ -63,7 +78,6 @@ $text = [
         ],
         'free_btn'    => 'Create site for free',
         'start_title' => 'Start',
-        'start_price' => '4 990 ₽',
         'start_period'=> 'per month',
         'start_features' => [
             'Everything in Free',
@@ -80,11 +94,28 @@ $text = [
             'Priority support',
         ],
         'start_btn'   => 'Activate Start',
+        'business_title' => 'Business',
+        'business_period'=> 'per month',
+        'business_features' => [
+            'Everything in Start',
+            'Turnkey setup (template, content, substitutions)',
+            'Your own domain binding',
+            'UTM substitution setup for client',
+            'Phone, WhatsApp, email setup',
+            'Initial analytics setup (Metrika with goals)',
+            'Priority support (response within an hour)',
+            'Personal manager',
+        ],
+        'business_btn' => 'Activate Business',
         'back'        => '← Back to home',
     ]
 ];
 
 $lang_data = $text[$lang] ?? $text['ru'];
+
+// Цены из конфига
+$startPrice    = number_format($tariffs['start']['price'], 0, '.', ' ') . ' ₽';
+$businessPrice = number_format($tariffs['business']['price'], 0, '.', ' ') . ' ₽';
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
@@ -102,7 +133,7 @@ $lang_data = $text[$lang] ?? $text['ru'];
             padding: 40px 20px;
         }
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         h2 {
@@ -131,7 +162,7 @@ $lang_data = $text[$lang] ?? $text['ru'];
             padding: 32px 28px;
             flex: 1;
             min-width: 280px;
-            max-width: 400px;
+            max-width: 360px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.04);
         }
         .plan.highlight {
@@ -240,7 +271,7 @@ $lang_data = $text[$lang] ?? $text['ru'];
             <div class="period"><?= htmlspecialchars($lang_data['free_period'], ENT_QUOTES, 'UTF-8') ?></div>
             <ul class="features">
                 <?php foreach ($lang_data['free_features'] as $f): ?>
-                    <li>✓ <?= htmlspecialchars($f, ENT_QUOTES, 'UTF-8') ?></li>
+                    <li><?= htmlspecialchars($f, ENT_QUOTES, 'UTF-8') ?></li>
                 <?php endforeach; ?>
             </ul>
             <a href="/" class="btn btn-free"><?= htmlspecialchars($lang_data['free_btn'], ENT_QUOTES, 'UTF-8') ?></a>
@@ -249,14 +280,27 @@ $lang_data = $text[$lang] ?? $text['ru'];
         <!-- Старт -->
         <div class="plan highlight">
             <h3><?= htmlspecialchars($lang_data['start_title'], ENT_QUOTES, 'UTF-8') ?></h3>
-            <div class="price"><?= htmlspecialchars($lang_data['start_price'], ENT_QUOTES, 'UTF-8') ?></div>
+            <div class="price"><?= htmlspecialchars($startPrice, ENT_QUOTES, 'UTF-8') ?></div>
             <div class="period"><?= htmlspecialchars($lang_data['start_period'], ENT_QUOTES, 'UTF-8') ?></div>
             <ul class="features">
                 <?php foreach ($lang_data['start_features'] as $f): ?>
-                    <li>✓ <?= htmlspecialchars($f, ENT_QUOTES, 'UTF-8') ?></li>
+                    <li><?= htmlspecialchars($f, ENT_QUOTES, 'UTF-8') ?></li>
                 <?php endforeach; ?>
             </ul>
             <a href="/login.php" class="btn btn-start"><?= htmlspecialchars($lang_data['start_btn'], ENT_QUOTES, 'UTF-8') ?></a>
+        </div>
+
+        <!-- Бизнес -->
+        <div class="plan">
+            <h3><?= htmlspecialchars($lang_data['business_title'], ENT_QUOTES, 'UTF-8') ?></h3>
+            <div class="price"><?= htmlspecialchars($businessPrice, ENT_QUOTES, 'UTF-8') ?></div>
+            <div class="period"><?= htmlspecialchars($lang_data['business_period'], ENT_QUOTES, 'UTF-8') ?></div>
+            <ul class="features">
+                <?php foreach ($lang_data['business_features'] as $f): ?>
+                    <li><?= htmlspecialchars($f, ENT_QUOTES, 'UTF-8') ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <a href="/login.php" class="btn btn-start"><?= htmlspecialchars($lang_data['business_btn'], ENT_QUOTES, 'UTF-8') ?></a>
         </div>
     </div>
 
@@ -264,5 +308,7 @@ $lang_data = $text[$lang] ?? $text['ru'];
         <a href="/"><?= htmlspecialchars($lang_data['back'], ENT_QUOTES, 'UTF-8') ?></a>
     </div>
 </div>
+<script src="//code.jivo.ru/widget/jmf4AkbuEc" async></script>
+
 </body>
 </html>
