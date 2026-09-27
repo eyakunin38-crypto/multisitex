@@ -7,10 +7,21 @@ require '/var/www/multisitex.com/vendor/autoload.php';
 
 use YooKassa\Client;
 
+// Загружаем тарифы
+$tariffs = require '/var/www/multisitex.com/config/tariffs.php';
+
 $site = $_GET['site'] ?? '';
 if (!$site) {
     die('Сайт не указан');
 }
+
+// Определяем тариф
+$tariffKey = $_GET['tariff'] ?? 'start';
+if (!isset($tariffs[$tariffKey])) {
+    die('Неизвестный тариф');
+}
+$price = $tariffs[$tariffKey]['price'];
+$title = $tariffs[$tariffKey]['title'];
 
 $db = new mysqli('localhost', 'multisitex_user', 'Mbx7gt8123!', 'multisitex_db');
 if ($db->connect_error) {
@@ -38,7 +49,7 @@ $client->setAuth('1474368', 'live_0DkCGxqRtIIhz3MtgCqat4NgEFWCfZhXY8QXVm-vfYQ');
 try {
     $payment = $client->createPayment([
         'amount' => [
-            'value' => '1.00',
+            'value' => number_format($price, 2, '.', ''),
             'currency' => 'RUB',
         ],
         'confirmation' => [
@@ -46,9 +57,10 @@ try {
             'return_url' => 'https://multisitex.com/pay-success.php?site=' . urlencode($site),
         ],
         'capture' => true,
-        'description' => 'Тестовый платёж 1 ₽ для ' . $site,
+        'description' => 'Тариф ' . $title . ' для ' . $site,
         'metadata' => [
-            'site' => $site,
+            'site'   => $site,
+            'tariff' => $tariffKey,
         ],
     ], uniqid('', true));
 

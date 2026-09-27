@@ -16,6 +16,7 @@ if ($data['event'] !== 'payment.succeeded') {
 }
 
 $site      = $data['object']['metadata']['site'] ?? '';
+$tariffKey = $data['object']['metadata']['tariff'] ?? 'start';
 $amount    = (float)($data['object']['amount']['value'] ?? 0);
 $paymentId = $data['object']['id'] ?? '';
 
@@ -24,8 +25,18 @@ if (!$site || !$paymentId) {
     exit(json_encode(['success' => false, 'error' => 'No site or payment_id']));
 }
 
-if ($amount < 4990.00) {
-    file_put_contents('/tmp/yookassa.log', "❌ Мало денег: $amount за $site\n", FILE_APPEND);
+// Проверка суммы по тарифу из config/tariffs.php
+$tariffs = require '/var/www/multisitex.com/config/tariffs.php';
+
+if (!isset($tariffs[$tariffKey])) {
+    file_put_contents('/tmp/yookassa.log', "❌ Неизвестный тариф: $tariffKey\n", FILE_APPEND);
+    exit(json_encode(['success' => false, 'error' => 'Unknown tariff']));
+}
+
+$expectedPrice = $tariffs[$tariffKey]['price'];
+
+if ($amount < $expectedPrice) {
+    file_put_contents('/tmp/yookassa.log', "❌ Мало денег: $amount за $site (нужно $expectedPrice)\n", FILE_APPEND);
     exit(json_encode(['success' => false, 'error' => 'Amount too low']));
 }
 
@@ -47,13 +58,13 @@ if ($stmt) {
     $stmt->close();
 }
 
-$stmt = $db->prepare("UPDATE sites SET tariff = 'start' WHERE domain = ?");
-$stmt->bind_param('s', $site);
+$stmt = $db->prepare("UPDATE sites SET tariff = ? WHERE domain = ?");
+$stmt->bind_param('ss', $tariffKey, $site);
 $stmt->execute();
 $stmt->close();
 
 $db->close();
 
-file_put_contents('/tmp/yookassa.log', "✅ Активирован: $site, $amount ₽, $paymentId\n", FILE_APPEND);
+file_put_contents('/tmp/yookassa.log', "✅ Активирован: $site, тариф $tariffKey, $amount ₽, $paymentId\n", FILE_APPEND);
 
 echo json_encode(['success' => true]);
