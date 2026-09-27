@@ -38,7 +38,7 @@ $client->setAuth('1474368', 'live_0DkCGxqRtIIhz3MtgCqat4NgEFWCfZhXY8QXVm-vfYQ');
 try {
     $payment = $client->createPayment([
         'amount' => [
-            'value' => '4990.00',
+            'value' => '1.00',
             'currency' => 'RUB',
         ],
         'confirmation' => [
@@ -46,7 +46,7 @@ try {
             'return_url' => 'https://multisitex.com/pay-success.php?site=' . urlencode($site),
         ],
         'capture' => true,
-        'description' => 'Тариф Старт для ' . $site,
+        'description' => 'Тестовый платёж 1 ₽ для ' . $site,
         'metadata' => [
             'site' => $site,
         ],
