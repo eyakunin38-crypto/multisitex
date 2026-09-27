@@ -1,20 +1,10 @@
 <?php
-declare(strict_types=1);
-session_start();
-
 // ============================================
 // АДМИНКА ДЛЯ КОНКРЕТНОГО САЙТА (новая архитектура)
 // ============================================
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// ===== Проверка авторизации =====
-if (empty($_SESSION['user_id'])) {
-    $redirect = urlencode($_SERVER['REQUEST_URI'] ?? '/');
-    header("Location: /login.php?redirect=$redirect");
-    exit;
-}
 
 // Подключаемся к БД
 $connect = mysqli_connect('localhost', 'multisitex_user', 'Mbx7gt8123!', 'multisitex_db');
@@ -36,18 +26,11 @@ if (preg_match('#/sites/([^/]+)/admin\.php#', $uri, $match)) {
 // ============================================
 // 2. ПОЛУЧАЕМ ДАННЫЕ О САЙТЕ
 // ============================================
-$domainSafe = mysqli_real_escape_string($connect, $domain);
-$result = mysqli_query($connect, "SELECT * FROM sites WHERE domain = '$domainSafe'");
+$result = mysqli_query($connect, "SELECT * FROM sites WHERE domain = '$domain'");
 $site = mysqli_fetch_assoc($result);
 
 if (!$site) {
     die("❌ Сайт $domain не найден в БД");
-}
-
-// ===== Проверка владельца сайта =====
-if ((int)$site['user_id'] !== (int)$_SESSION['user_id']) {
-    http_response_code(403);
-    exit('❌ Доступ запрещён');
 }
 
 $table = $site['content_table']; // таблица контента
@@ -129,10 +112,8 @@ while ($row = mysqli_fetch_assoc($res)) {
 // ============================================
 $leads = [];
 $resLeads = mysqli_query($connect, "SELECT * FROM `$leadsTable` ORDER BY id DESC LIMIT 50");
-if ($resLeads) {
-    while ($row = mysqli_fetch_assoc($resLeads)) {
-        $leads[] = $row;
-    }
+while ($row = mysqli_fetch_assoc($resLeads)) {
+    $leads[] = $row;
 }
 
 // ============================================
@@ -177,7 +158,6 @@ mysqli_close($connect);
                 <div>
                     <a href="<?= $siteUrl ?>" target="_blank" class="btn btn-outline-dark btn-sm">🌐 Открыть сайт</a>
                     <a href="<?= $siteUrl ?>admin.php?show=leads" class="btn btn-outline-secondary btn-sm ms-2">📋 Заявки</a>
-                    <a href="/logout.php" class="btn btn-outline-danger btn-sm ms-2">Выйти</a>
                 </div>
             </div>
         </div>
@@ -490,7 +470,7 @@ mysqli_close($connect);
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <a href="/pay.php?site=<?= urlencode($domain) ?>" class="btn btn-dark">Перейти к оплате</a>
+                <a href="/activate.php?site=<?= urlencode($domain) ?>" class="btn btn-dark">Перейти к оплате</a>
             </div>
         </div>
     </div>
@@ -516,5 +496,6 @@ mysqli_close($connect);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="//code.jivo.ru/widget/jmf4AkbuEc" async></script>
 </body>
 </html>
