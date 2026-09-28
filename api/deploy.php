@@ -92,12 +92,13 @@ function createSite(array $data): array
         $db->close();
 
         return [
-            'success'   => true,
-            'domain'    => $domain,
-            'url'       => "https://multisitex.com/sites/$domain/",
-            'admin_url' => "https://multisitex.com/sites/$domain/admin.php",
-            'niche'     => $niche,
-            'message'   => "✅ Сайт $domain создан (custom)",
+            'success'    => true,
+            'domain'     => $domain,
+            'url'        => "https://multisitex.com/sites/$domain/",
+            'admin_url'  => "https://multisitex.com/sites/$domain/admin.php",
+            'niche'      => $niche,
+            'visitor_id' => bin2hex(random_bytes(16)),
+            'message'    => "✅ Сайт $domain создан (custom)",
         ];
     }
 
@@ -237,12 +238,13 @@ function createSite(array $data): array
     exec('chmod -R 755 ' . escapeshellarg($clientPath));
 
     return [
-        'success'   => true,
-        'domain'    => $domain,
-        'url'       => "https://multisitex.com/sites/$domain/",
-        'admin_url' => "https://multisitex.com/sites/$domain/admin.php",
-        'niche'     => $niche,
-        'message'   => "✅ Сайт $domain создан для ниши $niche",
+        'success'    => true,
+        'domain'     => $domain,
+        'url'        => "https://multisitex.com/sites/$domain/",
+        'admin_url'  => "https://multisitex.com/sites/$domain/admin.php",
+        'niche'      => $niche,
+        'visitor_id' => bin2hex(random_bytes(16)),
+        'message'    => "✅ Сайт $domain создан для ниши $niche",
     ];
 }
 
@@ -312,11 +314,14 @@ function copyDir(string $src, string $dst): bool
 // ТОЧКА ВХОДА (HTTP)
 // ============================================
 if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
+    session_start();
+
     $data = [
         'niche'   => $_POST['niche']   ?? '',
         'phone'   => $_POST['phone']   ?? '',
         'product' => $_POST['product'] ?? '',
-        'user_id' => $_POST['user_id'] ?? 0,
+        'user_id' => $_SESSION['user_id'] ?? 0,
     ];
+
     echo json_encode(createSite($data), JSON_UNESCAPED_UNICODE);
 }
