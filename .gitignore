@@ -14,3 +14,4 @@ mlp_core/
 sites/
 .vscode/
 .idea/
+config/yookassa.php
