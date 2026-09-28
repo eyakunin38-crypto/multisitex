@@ -5,6 +5,15 @@ header('Content-Type: text/html; charset=utf-8');
 mb_internal_encoding('UTF-8');
 session_start();
 
+// ===== Cookie для определения «новый/постоянный» =====
+if (empty($_COOKIE['visitor_id'])) {
+    $visitorId = bin2hex(random_bytes(16));
+    setcookie('visitor_id', $visitorId, time() + 86400 * 365, '/');
+    $isReturning = false;
+} else {
+    $isReturning = true;
+}
+
 $lang = $_GET['lang'] ?? $_COOKIE['lang'] ?? 'ru';
 setcookie('lang', $lang, time() + 86400 * 365, '/');
 
@@ -37,6 +46,17 @@ $text = [
         'already_account'   => 'Уже есть аккаунт? Войти',
         'cancel'            => 'Отмена',
         'pricing_link'      => 'Тарифы',
+        'site_ready'        => 'Сайт создан!',
+        'site_sub'          => 'Ссылка на сайт:',
+        'site_admin'        => 'Админка сайта:',
+        'copy_btn'          => 'Копировать',
+        'copied'            => 'Скопировано!',
+        'open_btn'          => 'Открыть',
+        'adaptive_btn'      => 'Проверить адаптивность',
+        'save_email_title'  => 'Хотите получать заявки?',
+        'save_email_sub'    => 'Укажите email — будем присылать заявки с сайта',
+        'save_email_btn'    => 'Сохранить',
+        'skip_email'        => 'Пропустить',
     ],
     'en' => [
         'title'             => 'Create multisite',
@@ -66,6 +86,17 @@ $text = [
         'already_account'   => 'Already have an account? Log in',
         'cancel'            => 'Cancel',
         'pricing_link'      => 'Pricing',
+        'site_ready'        => 'Site created!',
+        'site_sub'          => 'Site link:',
+        'site_admin'        => 'Site admin:',
+        'copy_btn'          => 'Copy',
+        'copied'            => 'Copied!',
+        'open_btn'          => 'Open',
+        'adaptive_btn'      => 'Check adaptability',
+        'save_email_title'  => 'Want to receive leads?',
+        'save_email_sub'    => 'Enter email — we will send leads from your site',
+        'save_email_btn'    => 'Save',
+        'skip_email'        => 'Skip',
     ]
 ];
 
@@ -206,6 +237,51 @@ $lang_data = $text[$lang] ?? $text['ru'];
             color: #888;
             line-height: 1.5;
         }
+        .link-row {
+            display: flex;
+            align-items: center;
+            background: transparent;
+            border-bottom: 1px solid #eee;
+            padding: 8px 4px 8px 0;
+            margin-bottom: 12px;
+        }
+        .link-row .url {
+            font-size: 14px;
+            color: #111;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .link-row .btn-copy {
+            background: transparent;
+            border: none;
+            padding: 6px;
+            cursor: pointer;
+            color: #555;
+            font-size: 12px;
+        }
+        .link-row .btn-open {
+            background: transparent;
+            color: #111;
+            padding: 6px 0;
+            font-size: 13px;
+            text-decoration: none;
+            border-bottom: 1px solid #111;
+        }
+        .btn-adaptive {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #eee;
+            font-size: 14px;
+            color: #111;
+            text-decoration: none;
+            background: transparent;
+            cursor: pointer;
+            margin-top: 12px;
+            font-family: inherit;
+        }
         .modal-custom {
             position: fixed;
             inset: 0;
@@ -334,7 +410,8 @@ $lang_data = $text[$lang] ?? $text['ru'];
                 </div>
 
                 <input type="hidden" name="lang" value="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
-                <button type="submit" class="btn-create"><?= htmlspecialchars($lang_data['btn'], ENT_QUOTES, 'UTF-8') ?></button>
+                <button type="submit" class="btn-create" id="submitBtn"><?= htmlspecialchars($lang_data['btn'], ENT_QUOTES, 'UTF-8') ?></button>
+                <div id="status" class="mt-3 text-center"></div>
             </form>
 
             <div class="login-link">
@@ -350,6 +427,32 @@ $lang_data = $text[$lang] ?? $text['ru'];
             <p class="subtitle"><?= htmlspecialchars($lang_data['check_sub'], ENT_QUOTES, 'UTF-8') ?></p>
             <div class="email" id="emailDisplay"></div>
             <p class="hint"><?= htmlspecialchars($lang_data['check_hint'], ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
+
+        <div id="siteReadyBlock" class="check-block hidden">
+            <span class="icon-big">✅</span>
+            <h2><?= htmlspecialchars($lang_data['site_ready'], ENT_QUOTES, 'UTF-8') ?></h2>
+            <p class="subtitle"><?= htmlspecialchars($lang_data['site_sub'], ENT_QUOTES, 'UTF-8') ?></p>
+            <div class="link-row">
+                <span class="url" id="siteUrlDisplay"></span>
+                <button class="btn-copy" id="copyBtn"><?= htmlspecialchars($lang_data['copy_btn'], ENT_QUOTES, 'UTF-8') ?></button>
+                <a href="#" id="openSiteBtn" target="_blank" class="btn-open"><?= htmlspecialchars($lang_data['open_btn'], ENT_QUOTES, 'UTF-8') ?></a>
+            </div>
+            <div class="link-row">
+                <span class="url" id="adminUrlDisplay"></span>
+                <a href="#" id="openAdminBtn" target="_blank" class="btn-open"><?= htmlspecialchars($lang_data['site_admin'], ENT_QUOTES, 'UTF-8') ?></a>
+            </div>
+            <button class="btn-adaptive" id="adaptiveBtn"><?= htmlspecialchars($lang_data['adaptive_btn'], ENT_QUOTES, 'UTF-8') ?></button>
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #eee;">
+                <h3 style="font-size: 18px; font-weight: 300; color: #111; margin-bottom: 4px;"><?= htmlspecialchars($lang_data['save_email_title'], ENT_QUOTES, 'UTF-8') ?></h3>
+                <p class="subtitle" style="margin-bottom: 16px;"><?= htmlspecialchars($lang_data['save_email_sub'], ENT_QUOTES, 'UTF-8') ?></p>
+                <input type="email" id="quickEmail" class="form-control" placeholder="<?= htmlspecialchars($lang_data['email_placeholder'], ENT_QUOTES, 'UTF-8') ?>" style="margin-bottom: 12px;">
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn-cancel" id="skipEmailBtn" style="flex: 1;"><?= htmlspecialchars($lang_data['skip_email'], ENT_QUOTES, 'UTF-8') ?></button>
+                    <button class="btn-submit" id="saveEmailBtn" style="flex: 1;"><?= htmlspecialchars($lang_data['save_email_btn'], ENT_QUOTES, 'UTF-8') ?></button>
+                </div>
+                <div class="modal-error" id="quickError"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -373,10 +476,13 @@ $lang_data = $text[$lang] ?? $text['ru'];
 <script>
     const LANG = <?= json_encode($lang, JSON_UNESCAPED_UNICODE) ?>;
     const TEXT = <?= json_encode($lang_data, JSON_UNESCAPED_UNICODE) ?>;
+    const IS_RETURNING = <?= json_encode($isReturning) ?>;
 
     const form         = document.getElementById('deployForm');
     const nicheSelect  = document.getElementById('nicheSelect');
     const productBlock = document.getElementById('productBlock');
+    const submitBtn    = document.getElementById('submitBtn');
+    const statusDiv    = document.getElementById('status');
 
     const emailModal     = document.getElementById('emailModal');
     const emailInput     = document.getElementById('emailInput');
@@ -384,9 +490,12 @@ $lang_data = $text[$lang] ?? $text['ru'];
     const submitEmailBtn = document.getElementById('submitEmailBtn');
     const cancelBtn      = document.getElementById('cancelBtn');
 
-    const formBlock  = document.getElementById('formBlock');
-    const checkBlock = document.getElementById('checkBlock');
-    const emailDisplay = document.getElementById('emailDisplay');
+    const formBlock      = document.getElementById('formBlock');
+    const checkBlock     = document.getElementById('checkBlock');
+    const siteReadyBlock = document.getElementById('siteReadyBlock');
+    const emailDisplay   = document.getElementById('emailDisplay');
+
+    let currentSite = null;
 
     nicheSelect.addEventListener('change', function() {
         if (this.value === 'custom') {
@@ -396,16 +505,70 @@ $lang_data = $text[$lang] ?? $text['ru'];
         }
     });
 
-    form.addEventListener('submit', function(e) {
+    // ===== Отправка формы =====
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        modalError.textContent = '';
-        emailModal.classList.remove('hidden');
-        emailInput.value = '';
-        submitEmailBtn.disabled = false;
-        submitEmailBtn.textContent = TEXT.email_btn;
-        setTimeout(() => emailInput.focus(), 50);
+
+        if (IS_RETURNING) {
+            // Постоянный — показываем модалку email
+            modalError.textContent = '';
+            emailModal.classList.remove('hidden');
+            emailInput.value = '';
+            submitEmailBtn.disabled = false;
+            submitEmailBtn.textContent = TEXT.email_btn;
+            setTimeout(() => emailInput.focus(), 50);
+        } else {
+            // Новый — создаём сайт сразу
+            statusDiv.innerHTML = '<span class="text-muted">⏳ ' + TEXT.creating + '</span>';
+            submitBtn.disabled = true;
+
+            const data = new FormData(form);
+
+            try {
+                const response = await fetch('/api/deploy.php', { method: 'POST', body: data });
+                const result = await response.json();
+
+                if (result.success) {
+                    currentSite = result;
+
+                    // Ставим cookie visitor_id
+                    if (result.visitor_id) {
+                        document.cookie = 'visitor_id=' + result.visitor_id + '; max-age=' + (365*24*60*60) + '; path=/';
+                    }
+
+                    // Метрика
+                    if (typeof ym === 'function') {
+                        const niche   = (data.get('niche')   || '').toString().trim();
+                        const product = (data.get('product') || '').toString().trim();
+
+                        ym(112304158, 'params', {
+                            niche:   niche || 'unknown',
+                            product: product || '',
+                            lang:    LANG,
+                            site_url: result.url
+                        });
+                        ym(112304158, 'reachGoal', 'site_created');
+                    }
+
+                    // Показываем «Сайт готов»
+                    formBlock.classList.add('hidden');
+                    document.getElementById('siteUrlDisplay').textContent = result.url.replace('https://', '');
+                    document.getElementById('adminUrlDisplay').textContent = result.admin_url.replace('https://', '');
+                    document.getElementById('openSiteBtn').href = result.url;
+                    document.getElementById('openAdminBtn').href = result.admin_url;
+                    siteReadyBlock.classList.remove('hidden');
+                } else {
+                    statusDiv.innerHTML = '❌ ' + (result.error || TEXT.error);
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                statusDiv.innerHTML = '❌ ' + err.message;
+                submitBtn.disabled = false;
+            }
+        }
     });
 
+    // ===== Модалка email (для постоянных) =====
     cancelBtn.addEventListener('click', function() {
         emailModal.classList.add('hidden');
         modalError.textContent = '';
@@ -441,9 +604,6 @@ $lang_data = $text[$lang] ?? $text['ru'];
                         lang:    LANG
                     });
                     ym(112304158, 'reachGoal', 'registration_started');
-                    if (niche === 'custom') {
-                        ym(112304158, 'reachGoal', 'custom_niche_started');
-                    }
                 }
 
                 emailModal.classList.add('hidden');
@@ -451,6 +611,11 @@ $lang_data = $text[$lang] ?? $text['ru'];
                 emailDisplay.textContent = email;
                 checkBlock.classList.remove('hidden');
             } else {
+                // Если email уже активирован — редирект на логин
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                    return;
+                }
                 modalError.textContent = result.error || TEXT.email_error;
                 submitEmailBtn.disabled = false;
                 submitEmailBtn.textContent = TEXT.email_btn;
@@ -466,6 +631,70 @@ $lang_data = $text[$lang] ?? $text['ru'];
         if (e.key === 'Enter') {
             e.preventDefault();
             submitEmailBtn.click();
+        }
+    });
+
+    // ===== Кнопки на экране «Сайт готов» =====
+    document.getElementById('copyBtn').addEventListener('click', function() {
+        if (!currentSite) return;
+        navigator.clipboard.writeText(currentSite.url).then(() => {
+            this.textContent = TEXT.copied;
+            setTimeout(() => this.textContent = TEXT.copy_btn, 1500);
+        });
+    });
+
+    document.getElementById('adaptiveBtn').addEventListener('click', function() {
+        if (!currentSite) return;
+        const adaptiveUrl = 'https://iloveadaptive.com/ru/url/' + encodeURIComponent(currentSite.url);
+        window.open(adaptiveUrl, '_blank');
+    });
+
+    document.getElementById('skipEmailBtn').addEventListener('click', function() {
+        // Пользователь пропустил email — сайт работает 24 часа
+        siteReadyBlock.classList.add('hidden');
+        formBlock.classList.remove('hidden');
+        form.reset();
+        submitBtn.disabled = false;
+        statusDiv.innerHTML = '';
+    });
+
+    document.getElementById('saveEmailBtn').addEventListener('click', async function() {
+        const email = document.getElementById('quickEmail').value.trim();
+        const quickError = document.getElementById('quickError');
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            quickError.textContent = TEXT.email_invalid;
+            return;
+        }
+
+        if (!currentSite) return;
+
+        const data = new FormData(form);
+        data.append('email', email);
+
+        this.disabled = true;
+        quickError.textContent = '';
+
+        try {
+            const response = await fetch('/api/register.php', { method: 'POST', body: data });
+            const result = await response.json();
+
+            if (result.success) {
+                siteReadyBlock.classList.add('hidden');
+                formBlock.classList.add('hidden');
+                emailDisplay.textContent = email;
+                checkBlock.classList.remove('hidden');
+            } else {
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                    return;
+                }
+                quickError.textContent = result.error || TEXT.email_error;
+                this.disabled = false;
+            }
+        } catch (err) {
+            quickError.textContent = TEXT.email_error;
+            this.disabled = false;
         }
     });
 </script>
