@@ -1,10 +1,20 @@
 <?php
+declare(strict_types=1);
+session_start();
+
 // ============================================
 // АДМИНКА ДЛЯ КОНКРЕТНОГО САЙТА (новая архитектура)
 // ============================================
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+
+// ===== Проверка авторизации =====
+if (empty($_SESSION['user_id'])) {
+    $redirect = urlencode($_SERVER['REQUEST_URI'] ?? '/');
+    header("Location: /login.php?redirect=$redirect");
+    exit;
+}
 
 // Подключаемся к БД
 $connect = mysqli_connect('localhost', 'multisitex_user', 'Mbx7gt8123!', 'multisitex_db');
@@ -26,15 +36,22 @@ if (preg_match('#/sites/([^/]+)/admin\.php#', $uri, $match)) {
 // ============================================
 // 2. ПОЛУЧАЕМ ДАННЫЕ О САЙТЕ
 // ============================================
-$result = mysqli_query($connect, "SELECT * FROM sites WHERE domain = '$domain'");
+$domainSafe = mysqli_real_escape_string($connect, $domain);
+$result = mysqli_query($connect, "SELECT * FROM sites WHERE domain = '$domainSafe'");
 $site = mysqli_fetch_assoc($result);
 
 if (!$site) {
     die("❌ Сайт $domain не найден в БД");
 }
 
-$table = $site['content_table']; // таблица контента
-$leadsTable = 'leads_' . $domain; // таблица лидов
+// ===== Проверка владельца сайта =====
+if ((int)$site['user_id'] !== (int)$_SESSION['user_id']) {
+    http_response_code(403);
+    exit('❌ Доступ запрещён');
+}
+
+$table = $site['content_table'];
+$leadsTable = 'leads_' . $domain;
 
 // ============================================
 // 3. ОБРАБОТКА ДОБАВЛЕНИЯ
@@ -150,7 +167,6 @@ mysqli_close($connect);
 <body>
 <div class="container">
 
-    <!-- Шапка -->
     <div class="card">
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center flex-wrap">
@@ -158,24 +174,23 @@ mysqli_close($connect);
                 <div>
                     <a href="<?= $siteUrl ?>" target="_blank" class="btn btn-outline-dark btn-sm">🌐 Открыть сайт</a>
                     <a href="<?= $siteUrl ?>admin.php?show=leads" class="btn btn-outline-secondary btn-sm ms-2">📋 Заявки</a>
+                    <a href="/logout.php" class="btn btn-outline-danger btn-sm ms-2">Выйти</a>
                 </div>
             </div>
         </div>
     </div>
 
     <?php if (($site['tariff'] ?? '') === 'test'): ?>
-        <!-- Баннер тарифа — только на бесплатном -->
         <div class="tariff-banner">
             <div>
                 <strong>🚀 Активируйте тариф «Старт»</strong> — 4 990 ₽/мес<br>
                 <span class="text-muted small">Убирайте клеймо, загружайте свои картинки, смотрите аналитику</span>
             </div>
-            <a href="#" class="btn" data-bs-toggle="modal" data-bs-target="#videoModal">Посмотреть видео</a>
+            <a href="/pay.php?site=<?= urlencode($domain) ?>&tariff=start" class="btn">Активировать тариф</a>
         </div>
     <?php endif; ?>
 
     <?php if (isset($_GET['show']) && $_GET['show'] == 'leads'): ?>
-        <!-- ===== ЛИДЫ ===== -->
         <div class="card">
             <div class="card-header">📞 Заявки с сайта</div>
             <div class="card-body">
@@ -217,7 +232,6 @@ mysqli_close($connect);
             </div>
         </div>
     <?php else: ?>
-        <!-- ===== КОНТЕНТ ===== -->
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
@@ -303,7 +317,6 @@ mysqli_close($connect);
 
 </div>
 
-<!-- ===== МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ===== -->
 <div class="modal fade" id="addModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -375,7 +388,6 @@ mysqli_close($connect);
     </div>
 </div>
 
-<!-- ===== МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ ===== -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -448,36 +460,7 @@ mysqli_close($connect);
     </div>
 </div>
 
-<!-- ===== МОДАЛЬНОЕ ОКНО С ВИДЕО ===== -->
-<div class="modal fade" id="videoModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Как активировать сайт</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="ratio ratio-16x9">
-                    <iframe
-                        src="https://rutube.ru/play/embed/d3b0f75aaff8496e2f6fd595783e2a0a/"
-                        style="border: none;"
-                        allow="clipboard-write; autoplay"
-                        allowFullScreen></iframe>
-                </div>
-                <p class="mt-3 mb-0 text-muted small">
-                    После просмотра выберите тариф и завершите активацию.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <a href="/activate.php?site=<?= urlencode($domain) ?>" class="btn btn-dark">Перейти к оплате</a>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-    // Заполнение модального окна редактирования
     document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', function() {
             document.getElementById('edit_id').value = this.dataset.id;
@@ -496,6 +479,5 @@ mysqli_close($connect);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="//code.jivo.ru/widget/jmf4AkbuEc" async></script>
 </body>
 </html>
