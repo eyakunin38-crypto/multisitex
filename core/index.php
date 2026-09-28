@@ -4,11 +4,22 @@
 // ============================================
 header('Content-Type: text/html; charset=utf-8');
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 
-$connect = mysqli_connect('localhost', 'multisitex_user', 'Mbx7gt8123!', 'multisitex_db');
+// ============================================
+// КОНФИГ
+// ============================================
+$cfgFile = '/var/www/multisitex.com/config/db.php';
+if (!file_exists($cfgFile)) {
+    http_response_code(500);
+    die('Config not found');
+}
+$dbCfg = require $cfgFile;
+
+$connect = mysqli_connect($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
 if (!$connect) {
-    die("Ошибка БД: " . mysqli_connect_error());
+    http_response_code(500);
+    die("Ошибка БД");
 }
 mysqli_set_charset($connect, "utf8mb4");
 
@@ -32,25 +43,24 @@ if (preg_match('#/sites/([^/]+)/#', $uri, $match)) {
     $domain = $_SERVER['HTTP_HOST'];
 }
 
+$domainEsc = mysqli_real_escape_string($connect, $domain);
+
 $result = mysqli_query($connect, "
     SELECT
         s.content_table,
         s.niche,
-        s.template_id,
-        t.template_name,
+        s.tariff,
         st.phone,
-        st.whatsapp,
-        s.tariff
+        st.whatsapp
     FROM sites s
     LEFT JOIN settings st ON s.domain = st.domain
-    LEFT JOIN templates t ON s.template_id = t.id
-    WHERE s.domain = '$domain' AND s.status = 'active'
+    WHERE s.domain = '$domainEsc' AND s.status = 'active'
 ");
 $site = mysqli_fetch_assoc($result);
 
 if (!$site) {
     http_response_code(404);
-    die("❌ Сайт не найден: $domain");
+    die("❌ Сайт не найден: " . htmlspecialchars($domain));
 }
 
 // ============================================
@@ -72,8 +82,8 @@ while ($row = mysqli_fetch_assoc($res)) {
 // 5. ПАРАМЕТРЫ URL
 // ============================================
 $header = $content[1][1]['content'] ?? 'Заголовок';
-$image = $content[4][1]['image'] ?? '';
-$video = $content[5][1]['video'] ?? '';
+$image  = $content[4][1]['image']   ?? '';
+$video  = $content[5][1]['video']   ?? '';
 $button = $content[3][1]['content'] ?? 'Кнопка';
 
 // ============================================
@@ -129,23 +139,23 @@ if (isset($_GET['v']) && isset($content[5][(int)$_GET['v']])) {
 // 6. ТЕГИ ДЛЯ ШАБЛОНИЗАТОРА
 // ============================================
 $tags = [
-    'Region' => $region,
-    'Header' => $header,
-    'Image' => $image,
-    'button' => $button,
-    'video' => $video,
-    'Keyword' => $keyword,
-    'Phone' => $site['phone'] ?? '79882447774',
-    'Whatsapp' => $site['whatsapp'] ?? '79531107773',
-    'Source' => $_GET['utm_source'] ?? 'прямой заход',
-    'Url' => "https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+    'Region'     => $region,
+    'Header'     => $header,
+    'Image'      => $image,
+    'button'     => $button,
+    'video'      => $video,
+    'Keyword'    => $keyword,
+    'Phone'      => $site['phone']    ?? '79882447774',
+    'Whatsapp'   => $site['whatsapp'] ?? '79531107773',
+    'Source'     => $_GET['utm_source'] ?? 'прямой заход',
+    'Url'        => "https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
     'Codeheader' => '1',
-    'header_1' => $header,
-    'phone' => $site['phone'] ?? '79882447774',
-    'whatsapp' => $site['whatsapp'] ?? '79531107773',
-    'image_1' => $image,
-    'video_1' => $video,
-    'button_1' => $button,
+    'header_1'   => $header,
+    'phone'      => $site['phone']    ?? '79882447774',
+    'whatsapp'   => $site['whatsapp'] ?? '79531107773',
+    'image_1'    => $image,
+    'video_1'    => $video,
+    'button_1'   => $button,
 ];
 
 // ============================================
@@ -164,7 +174,7 @@ $html = $tc->Fill();
 // 8. ПЛАШКА — автоматически перед </body>, только на тарифе test
 // ============================================
 if (($site['tariff'] ?? '') === 'test') {
-    $site_domain = $domain; // домен клиентского сайта (не multisitex.com)
+    $site_domain = $domain;
     $utm_url = 'https://multisitex.com/?utm_source=' . urlencode($site_domain)
              . '&utm_medium=badge&utm_campaign=free_site';
 
@@ -188,4 +198,3 @@ if (($site['tariff'] ?? '') === 'test') {
 echo $html;
 
 mysqli_close($connect);
-?>

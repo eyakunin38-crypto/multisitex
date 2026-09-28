@@ -70,10 +70,8 @@ function resolveUserId(mysqli $db): int
 // ============================================
 // ФУНКЦИЯ СОЗДАНИЯ САЙТА
 // ============================================
-function createSite(array $data): array
+function createSite(array $data, mysqli $db): array
 {
-    global $dbCfg;
-
     $niche   = trim($data['niche']   ?? '');
     $phone   = trim($data['phone']   ?? '');
     $product = trim($data['product'] ?? '');
@@ -88,17 +86,6 @@ function createSite(array $data): array
         $phone = '79882447774';
     }
 
-    $db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
-    if ($db->connect_error) {
-        return ['success' => false, 'error' => 'Ошибка БД'];
-    }
-    $db->set_charset('utf8mb4');
-
-    // Если user_id не передан — создаём/находим
-    if ($user_id <= 0) {
-        $user_id = resolveUserId($db);
-    }
-
     // ============================================
     // ВЕТКА CUSTOM
     // ============================================
@@ -107,7 +94,6 @@ function createSite(array $data): array
         $clientPath = SITES_PATH . '/' . $domain;
 
         if (!mkdir($clientPath, 0755, true)) {
-            $db->close();
             return ['success' => false, 'error' => "Не удалось создать папку: $clientPath"];
         }
 
@@ -120,12 +106,10 @@ function createSite(array $data): array
         symlink(CORE_PATH . '/admin.php', $clientPath . '/admin.php');
 
         if (!createContentTable($db, $domain)) {
-            $db->close();
             return ['success' => false, 'error' => 'Ошибка создания таблицы контента: ' . $db->error];
         }
 
         if (!createLeadsTable($db, $domain)) {
-            $db->close();
             return ['success' => false, 'error' => 'Ошибка создания таблицы лидов: ' . $db->error];
         }
 
@@ -138,8 +122,6 @@ function createSite(array $data): array
         $stmt->bind_param('ssss', $phone, $niche, $domain, $product);
         $stmt->execute();
         $stmt->close();
-
-        $db->close();
 
         return [
             'success'    => true,
@@ -158,23 +140,24 @@ function createSite(array $data): array
     $stmt = $db->prepare("SELECT template_path FROM niches WHERE name = ?");
     $stmt->bind_param('s', $niche);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+    $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
     if (!$row) {
-        $db->close();
         return ['success' => false, 'error' => "Ниша '$niche' не найдена"];
     }
 
     $templatePath = rtrim($row['template_path'], '/') . '/';
     if (!is_dir($templatePath)) {
-        $db->close();
         return ['success' => false, 'error' => "Папка шаблона не найдена: $templatePath"];
     }
 
+    // ============================================
     // Поиск свободного номера
+    // ============================================
     $existingDomains = [];
+
+    // 1. Из sites
     $stmt = $db->prepare("SELECT domain FROM sites WHERE niche = ?");
     $stmt->bind_param('s', $niche);
     $stmt->execute();
@@ -184,6 +167,37 @@ function createSite(array $data): array
     }
     $stmt->close();
 
+    // 2. Из settings
+    $stmt = $db->prepare("SELECT domain FROM settings WHERE domain LIKE ?");
+    $like = $niche . '%';
+    $stmt->bind_param('s', $like);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) {
+        $existingDomains[] = $r['domain'];
+    }
+    $stmt->close();
+
+    // 3. Из таблиц {domain}
+    $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_name LIKE ?");
+    $dbName = 'multisitex_db';
+    $likeTable = $niche . '%';
+    $stmt->bind_param('ss', $dbName, $likeTable);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) {
+        $t = $r['table_name'];
+        // Пропускаем служебные
+        if (strpos($t, 'template_') === 0) continue;
+        if (strpos($t, 'leads_') === 0) continue;
+        $existingDomains[] = $t;
+    }
+    $stmt->close();
+
+    // Уникализируем
+    $existingDomains = array_unique($existingDomains);
+
+    // Ищем максимальный номер
     $maxNumber = 0;
     foreach ($existingDomains as $d) {
         if (strpos($d, $niche) === 0) {
@@ -196,11 +210,16 @@ function createSite(array $data): array
     $domain = $niche . $nextNumber;
     $clientPath = SITES_PATH . '/' . $domain;
 
+    // ============================================
+    // Цикл — пока не найдём свободное имя
+    // ============================================
     $attempts = 0;
-    while (file_exists($clientPath) || in_array($domain, $existingDomains, true)) {
+    while (
+        in_array($domain, $existingDomains, true) ||
+        file_exists($clientPath)
+    ) {
         $attempts++;
-        if ($attempts > 100) {
-            $db->close();
+        if ($attempts > 1000) {
             return ['success' => false, 'error' => 'Не удалось сгенерировать уникальное имя'];
         }
         $nextNumber++;
@@ -209,12 +228,10 @@ function createSite(array $data): array
     }
 
     if (!mkdir($clientPath, 0755, true)) {
-        $db->close();
         return ['success' => false, 'error' => "Не удалось создать папку: $clientPath"];
     }
 
     if (!copyDir($templatePath, $clientPath . '/templates')) {
-        $db->close();
         return ['success' => false, 'error' => 'Ошибка копирования шаблона'];
     }
 
@@ -239,17 +256,24 @@ function createSite(array $data): array
     file_put_contents($clientPath . '/settings.php', $settings);
 
     if (!createContentTable($db, $domain)) {
-        $db->close();
         return ['success' => false, 'error' => 'Ошибка создания таблицы контента: ' . $db->error];
     }
 
     $templateTable = 'template_' . $niche;
     if (!$db->query("INSERT INTO `$domain` SELECT * FROM `$templateTable`")) {
-        $db->close();
         return ['success' => false, 'error' => 'Ошибка копирования шаблона контента: ' . $db->error];
     }
 
-    $stmt = $db->prepare("INSERT INTO settings (domain, phone, whatsapp) VALUES (?, ?, ?)");
+    // ============================================
+    // INSERT settings — с ON DUPLICATE KEY UPDATE
+    // ============================================
+    $stmt = $db->prepare("
+        INSERT INTO settings (domain, phone, whatsapp)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            phone = VALUES(phone),
+            whatsapp = VALUES(whatsapp)
+    ");
     $stmt->bind_param('sss', $domain, $phone, $phone);
     $stmt->execute();
     $stmt->close();
@@ -262,7 +286,6 @@ function createSite(array $data): array
     $stmt->close();
 
     if (!createLeadsTable($db, $domain)) {
-        $db->close();
         return ['success' => false, 'error' => 'Ошибка создания таблицы лидов: ' . $db->error];
     }
 
@@ -270,8 +293,6 @@ function createSite(array $data): array
     $stmt->bind_param('sss', $phone, $niche, $domain);
     $stmt->execute();
     $stmt->close();
-
-    $db->close();
 
     exec('chown -R nginx:nginx ' . escapeshellarg($clientPath));
     exec('chmod -R 755 ' . escapeshellarg($clientPath));
@@ -363,8 +384,8 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
     }
     $db->set_charset('utf8mb4');
 
+    // Определяем пользователя ОДИН раз
     $user_id = resolveUserId($db);
-    $db->close();
 
     $data = [
         'niche'   => $_POST['niche']   ?? '',
@@ -373,6 +394,10 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
         'user_id' => $user_id,
     ];
 
+    $result = createSite($data, $db);
+
+    $db->close();
+
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(createSite($data), JSON_UNESCAPED_UNICODE);
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
 }

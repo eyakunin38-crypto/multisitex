@@ -19,7 +19,7 @@ if (!file_exists($dbCfgFile) || !file_exists($mailCfgFile)) {
     exit('Config not found');
 }
 
-$dbCfg     = require $dbCfgFile;
+$dbCfg      = require $dbCfgFile;
 $mailConfig = require $mailCfgFile;
 
 $db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
@@ -29,9 +29,9 @@ if ($db->connect_error) {
 }
 $db->set_charset('utf8mb4');
 
-$error   = '';
-$user    = null;
-$token   = trim($_GET['token'] ?? $_POST['token'] ?? '');
+$error = '';
+$user  = null;
+$token = trim($_GET['token'] ?? $_POST['token'] ?? '');
 
 // ============================================
 // 1. ПРОВЕРКА ТОКЕНА
@@ -71,41 +71,64 @@ if ($user && $error === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm) {
         $error = 'Пароли не совпадают.';
     } else {
-        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $hash   = password_hash($password, PASSWORD_DEFAULT);
+        $userId = (int)$user['id'];
 
-        // Обновляем юзера
+        // Обновляем юзера — пароль + активация
         $stmt = $db->prepare("
             UPDATE users
             SET password = ?, email_verified = 1, email_token = NULL, token_expires = NULL, last_login = NOW()
             WHERE id = ?
         ");
-        $stmt->bind_param('si', $hash, $user['id']);
+        $stmt->bind_param('si', $hash, $userId);
         $stmt->execute();
         $stmt->close();
 
-        // Вызов deploy.php
-        require_once '/var/www/multisitex.com/api/deploy.php';
+        // ============================================
+        // ПРОВЕРЯЕМ — ЕСТЬ ЛИ УЖЕ САЙТ У ЭТОГО USER?
+        // ============================================
+        $stmt = $db->prepare("SELECT domain, status FROM sites WHERE user_id = ? ORDER BY id ASC LIMIT 1");
+        $stmt->bind_param('i', $userId);
+        $stmt->execute();
+        $existingSite = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
 
-        $niche = $user['pending_niche'] ?: 'moduldom';
-
-        $result = createSite([
-            'niche'   => $niche,
-            'phone'   => $user['phone']            ?: '',
-            'product' => $user['pending_product'] ?: '',
-            'user_id' => (int)$user['id'],
-        ]);
-
-        if (!$result['success']) {
-            $error = 'Ошибка создания сайта: ' . ($result['error'] ?? 'неизвестно');
+        if ($existingSite) {
+            // Сайт уже есть (создан при deploy.php) — не создаём новый
+            $domain   = $existingSite['domain'];
+            $siteUrl  = "https://multisitex.com/sites/$domain/";
+            $adminUrl = "https://multisitex.com/sites/$domain/admin.php";
         } else {
+            // Сайта нет — создаём (fallback)
+            require_once '/var/www/multisitex.com/api/deploy.php';
+
+            $niche = $user['pending_niche'] ?: 'moduldom';
+
+            $result = createSite([
+                'niche'   => $niche,
+                'phone'   => $user['phone']            ?: '',
+                'product' => $user['pending_product'] ?: '',
+                'user_id' => $userId,
+            ], $db);
+
+            if (!$result['success']) {
+                $error = 'Ошибка создания сайта: ' . ($result['error'] ?? 'неизвестно');
+            } else {
+                $siteUrl  = $result['url'];
+                $adminUrl = $result['admin_url'];
+            }
+        }
+
+        // Если ошибки нет — очищаем pending и редиректим
+        if ($error === '') {
             // Очищаем pending
             $stmt = $db->prepare("UPDATE users SET pending_niche = NULL, pending_product = NULL WHERE id = ?");
-            $stmt->bind_param('i', $user['id']);
+            $stmt->bind_param('i', $userId);
             $stmt->execute();
             $stmt->close();
 
             // ===== УСТАНАВЛИВАЕМ СЕССИЮ =====
-            $_SESSION['user_id'] = (int)$user['id'];
+            $_SESSION['user_id'] = $userId;
             session_regenerate_id(true);
 
             // Приветственное письмо
@@ -124,8 +147,8 @@ if ($user && $error === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mail->Subject = 'Ваш сайт в Multisitex создан';
                 $mail->Body = "Здравствуйте!\n\n"
                     . "Ваш сайт успешно создан.\n\n"
-                    . "Админка: " . $result['admin_url'] . "\n"
-                    . "Сайт: " . $result['url'] . "\n\n"
+                    . "Админка: " . $adminUrl . "\n"
+                    . "Сайт: " . $siteUrl . "\n\n"
                     . "Multisitex";
                 $mail->send();
             } catch (Exception $e) {
@@ -133,7 +156,7 @@ if ($user && $error === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Редирект в админку
-            header('Location: ' . $result['admin_url']);
+            header('Location: ' . $adminUrl);
             exit;
         }
     }

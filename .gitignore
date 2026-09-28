@@ -15,3 +15,4 @@ sites/
 .vscode/
 .idea/
 config/yookassa.php
+api/.user.ini
