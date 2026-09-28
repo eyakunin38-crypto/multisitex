@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-header('Content-Type: text/html; charset=utf-8');
 mb_internal_encoding('UTF-8');
 session_start();
 
@@ -9,13 +8,28 @@ require '/var/www/multisitex.com/vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-$mailConfig = require '/var/www/multisitex.com/config/mail.php';
+// ============================================
+// КОНФИГ
+// ============================================
+$dbCfgFile   = '/var/www/multisitex.com/config/db.php';
+$mailCfgFile = '/var/www/multisitex.com/config/mail.php';
 
-$db = new mysqli('localhost', 'multisitex_user', 'Mbx7gt8123!', 'multisitex_db');
+if (!file_exists($dbCfgFile) || !file_exists($mailCfgFile)) {
+    http_response_code(500);
+    exit('Config not found');
+}
+
+$dbCfg     = require $dbCfgFile;
+$mailConfig = require $mailCfgFile;
+
+$db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
+if ($db->connect_error) {
+    http_response_code(500);
+    exit('Ошибка БД');
+}
 $db->set_charset('utf8mb4');
 
 $error   = '';
-$success = false;
 $user    = null;
 $token   = trim($_GET['token'] ?? $_POST['token'] ?? '');
 
@@ -25,7 +39,12 @@ $token   = trim($_GET['token'] ?? $_POST['token'] ?? '');
 if ($token === '') {
     $error = 'Ссылка недействительна.';
 } else {
-    $stmt = $db->prepare("SELECT id, email, phone, email_verified, token_expires, pending_niche, pending_product FROM users WHERE email_token = ? LIMIT 1");
+    $stmt = $db->prepare("
+        SELECT id, email, phone, email_verified, token_expires, pending_niche, pending_product
+        FROM users
+        WHERE email_token = ?
+        LIMIT 1
+    ");
     $stmt->bind_param('s', $token);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
@@ -33,9 +52,9 @@ if ($token === '') {
 
     if (!$user) {
         $error = 'Ссылка недействительна или уже использована.';
-    } elseif ($user['email_verified'] == 1) {
+    } elseif ((int)$user['email_verified'] === 1) {
         $error = 'Этот email уже активирован. Войдите в админку.';
-    } elseif (strtotime($user['token_expires']) < time()) {
+    } elseif (strtotime((string)$user['token_expires']) < time()) {
         $error = 'Ссылка истекла. Пройдите регистрацию заново.';
     }
 }
@@ -55,7 +74,11 @@ if ($user && $error === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $hash = password_hash($password, PASSWORD_DEFAULT);
 
         // Обновляем юзера
-        $stmt = $db->prepare("UPDATE users SET password = ?, email_verified = 1, email_token = NULL, token_expires = NULL, last_login = NOW() WHERE id = ?");
+        $stmt = $db->prepare("
+            UPDATE users
+            SET password = ?, email_verified = 1, email_token = NULL, token_expires = NULL, last_login = NOW()
+            WHERE id = ?
+        ");
         $stmt->bind_param('si', $hash, $user['id']);
         $stmt->execute();
         $stmt->close();
@@ -63,18 +86,23 @@ if ($user && $error === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         // Вызов deploy.php
         require_once '/var/www/multisitex.com/api/deploy.php';
 
+        $niche = $user['pending_niche'] ?: 'moduldom';
+
         $result = createSite([
-            'niche'   => $user['pending_niche']   ?: 'custom',
+            'niche'   => $niche,
             'phone'   => $user['phone']            ?: '',
             'product' => $user['pending_product'] ?: '',
-            'user_id' => $user['id'],
+            'user_id' => (int)$user['id'],
         ]);
 
         if (!$result['success']) {
             $error = 'Ошибка создания сайта: ' . ($result['error'] ?? 'неизвестно');
         } else {
             // Очищаем pending
-            $db->query("UPDATE users SET pending_niche = NULL, pending_product = NULL WHERE id = " . (int)$user['id']);
+            $stmt = $db->prepare("UPDATE users SET pending_niche = NULL, pending_product = NULL WHERE id = ?");
+            $stmt->bind_param('i', $user['id']);
+            $stmt->execute();
+            $stmt->close();
 
             // ===== УСТАНАВЛИВАЕМ СЕССИЮ =====
             $_SESSION['user_id'] = (int)$user['id'];
@@ -110,6 +138,11 @@ if ($user && $error === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// ============================================
+// РЕНДЕР
+// ============================================
+header('Content-Type: text/html; charset=utf-8');
 ?>
 <!DOCTYPE html>
 <html lang="ru">

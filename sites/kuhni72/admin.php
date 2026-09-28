@@ -1,1 +1,0 @@
-/var/www/multisitex.com/core/admin.php

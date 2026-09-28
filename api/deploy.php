@@ -5,24 +5,75 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', '/tmp/deploy_errors.log');
 
-header('Content-Type: application/json; charset=utf-8');
-
 // ============================================
 // КОНФИГ
 // ============================================
-const DB_HOST = 'localhost';
-const DB_USER = 'multisitex_user';
-const DB_PASS = 'Mbx7gt8123!';
-const DB_NAME = 'multisitex_db';
-const SITES_PATH = '/var/www/multisitex.com/sites';
-const CORE_PATH  = '/var/www/multisitex.com/core';
+$cfgFile = '/var/www/multisitex.com/config/db.php';
+if (!file_exists($cfgFile)) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Config not found']);
+    exit;
+}
+$dbCfg = require $cfgFile;
+
+const SITES_PATH     = '/var/www/multisitex.com/sites';
+const CORE_PATH      = '/var/www/multisitex.com/core';
 const TEMPLATES_PATH = '/var/www/multisitex.com/templates';
+
+// ============================================
+// ПОЛЬЗОВАТЕЛЬ
+// ============================================
+function resolveUserId(mysqli $db): int
+{
+    // 1. Сессия
+    if (!empty($_SESSION['user_id'])) {
+        return (int)$_SESSION['user_id'];
+    }
+
+    // 2. Куки
+    if (!empty($_COOKIE['visitor_id'])) {
+        $visitor_id = $_COOKIE['visitor_id'];
+        $stmt = $db->prepare("SELECT id FROM users WHERE visitor_id = ?");
+        $stmt->bind_param('s', $visitor_id);
+        $stmt->execute();
+        $u = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if ($u) {
+            $_SESSION['user_id'] = (int)$u['id'];
+            return (int)$u['id'];
+        }
+    }
+
+    // 3. Новый
+    $visitor_id = bin2hex(random_bytes(16));
+    $stmt = $db->prepare("INSERT INTO users (visitor_id) VALUES (?)");
+    $stmt->bind_param('s', $visitor_id);
+    $stmt->execute();
+    $user_id = (int)$db->insert_id;
+    $stmt->close();
+
+    if (!headers_sent()) {
+        setcookie('visitor_id', $visitor_id, [
+            'expires'  => time() + 60 * 60 * 24 * 365,
+            'path'     => '/',
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+
+    $_SESSION['user_id'] = $user_id;
+    return $user_id;
+}
 
 // ============================================
 // ФУНКЦИЯ СОЗДАНИЯ САЙТА
 // ============================================
 function createSite(array $data): array
 {
+    global $dbCfg;
+
     $niche   = trim($data['niche']   ?? '');
     $phone   = trim($data['phone']   ?? '');
     $product = trim($data['product'] ?? '');
@@ -34,14 +85,19 @@ function createSite(array $data): array
 
     $phone = preg_replace('/[^0-9+]/', '', $phone);
     if ($phone === '') {
-        $phone = '79882447774'; // fallback
+        $phone = '79882447774';
     }
 
-    $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+    $db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
     if ($db->connect_error) {
-        return ['success' => false, 'error' => 'Ошибка БД: ' . $db->connect_error];
+        return ['success' => false, 'error' => 'Ошибка БД'];
     }
     $db->set_charset('utf8mb4');
+
+    // Если user_id не передан — создаём/находим
+    if ($user_id <= 0) {
+        $user_id = resolveUserId($db);
+    }
 
     // ============================================
     // ВЕТКА CUSTOM
@@ -55,35 +111,29 @@ function createSite(array $data): array
             return ['success' => false, 'error' => "Не удалось создать папку: $clientPath"];
         }
 
-        // Шаблон
         $templatesDir = $clientPath . '/templates';
         mkdir($templatesDir, 0755, true);
         copy(TEMPLATES_PATH . '/default/main.html', $templatesDir . '/main.html');
 
-        // Симлинки
         symlink(CORE_PATH . '/index.php', $clientPath . '/index.php');
         symlink(CORE_PATH . '/send.php',  $clientPath . '/send.php');
         symlink(CORE_PATH . '/admin.php', $clientPath . '/admin.php');
 
-        // Таблица контента
         if (!createContentTable($db, $domain)) {
             $db->close();
             return ['success' => false, 'error' => 'Ошибка создания таблицы контента: ' . $db->error];
         }
 
-        // Таблица лидов
         if (!createLeadsTable($db, $domain)) {
             $db->close();
             return ['success' => false, 'error' => 'Ошибка создания таблицы лидов: ' . $db->error];
         }
 
-        // INSERT в sites
         $stmt = $db->prepare("INSERT INTO sites (user_id, domain, niche, content_table, status) VALUES (?, ?, 'custom', ?, 'active')");
         $stmt->bind_param('iss', $user_id, $domain, $domain);
         $stmt->execute();
         $stmt->close();
 
-        // INSERT в leads (платформа)
         $stmt = $db->prepare("INSERT INTO leads (phone, niche, domain, product, created_at) VALUES (?, ?, ?, ?, NOW())");
         $stmt->bind_param('ssss', $phone, $niche, $domain, $product);
         $stmt->execute();
@@ -97,7 +147,7 @@ function createSite(array $data): array
             'url'        => "https://multisitex.com/sites/$domain/",
             'admin_url'  => "https://multisitex.com/sites/$domain/admin.php",
             'niche'      => $niche,
-            'visitor_id' => bin2hex(random_bytes(16)),
+            'user_id'    => $user_id,
             'message'    => "✅ Сайт $domain создан (custom)",
         ];
     }
@@ -158,19 +208,16 @@ function createSite(array $data): array
         $clientPath = SITES_PATH . '/' . $domain;
     }
 
-    // Папка
     if (!mkdir($clientPath, 0755, true)) {
         $db->close();
         return ['success' => false, 'error' => "Не удалось создать папку: $clientPath"];
     }
 
-    // Копирование шаблона
     if (!copyDir($templatePath, $clientPath . '/templates')) {
         $db->close();
         return ['success' => false, 'error' => 'Ошибка копирования шаблона'];
     }
 
-    // Симлинки
     foreach (['index.php', 'send.php', 'admin.php'] as $f) {
         $target = CORE_PATH . '/' . $f;
         $link   = $clientPath . '/' . $f;
@@ -180,7 +227,6 @@ function createSite(array $data): array
         }
     }
 
-    // settings.php
     $settings = "<?php\n"
         . "define('SITE_DOMAIN', '" . $domain . "');\n"
         . "define('SITE_NICHE', '" . $niche . "');\n"
@@ -192,26 +238,22 @@ function createSite(array $data): array
         . "];\n";
     file_put_contents($clientPath . '/settings.php', $settings);
 
-    // Таблица контента
     if (!createContentTable($db, $domain)) {
         $db->close();
         return ['success' => false, 'error' => 'Ошибка создания таблицы контента: ' . $db->error];
     }
 
-    // Копирование контента из шаблонной таблицы
     $templateTable = 'template_' . $niche;
     if (!$db->query("INSERT INTO `$domain` SELECT * FROM `$templateTable`")) {
         $db->close();
         return ['success' => false, 'error' => 'Ошибка копирования шаблона контента: ' . $db->error];
     }
 
-    // settings (contacts)
     $stmt = $db->prepare("INSERT INTO settings (domain, phone, whatsapp) VALUES (?, ?, ?)");
     $stmt->bind_param('sss', $domain, $phone, $phone);
     $stmt->execute();
     $stmt->close();
 
-    // sites
     $templateId = 1;
     $status = 'active';
     $stmt = $db->prepare("INSERT INTO sites (user_id, domain, niche, template_id, content_table, status) VALUES (?, ?, ?, ?, ?, ?)");
@@ -219,13 +261,11 @@ function createSite(array $data): array
     $stmt->execute();
     $stmt->close();
 
-    // leads таблица
     if (!createLeadsTable($db, $domain)) {
         $db->close();
         return ['success' => false, 'error' => 'Ошибка создания таблицы лидов: ' . $db->error];
     }
 
-    // leads (платформа)
     $stmt = $db->prepare("INSERT INTO leads (phone, niche, domain, product, created_at) VALUES (?, ?, ?, '', NOW())");
     $stmt->bind_param('sss', $phone, $niche, $domain);
     $stmt->execute();
@@ -233,7 +273,6 @@ function createSite(array $data): array
 
     $db->close();
 
-    // Права
     exec('chown -R nginx:nginx ' . escapeshellarg($clientPath));
     exec('chmod -R 755 ' . escapeshellarg($clientPath));
 
@@ -243,7 +282,7 @@ function createSite(array $data): array
         'url'        => "https://multisitex.com/sites/$domain/",
         'admin_url'  => "https://multisitex.com/sites/$domain/admin.php",
         'niche'      => $niche,
-        'visitor_id' => bin2hex(random_bytes(16)),
+        'user_id'    => $user_id,
         'message'    => "✅ Сайт $domain создан для ниши $niche",
     ];
 }
@@ -316,12 +355,24 @@ function copyDir(string $src, string $dst): bool
 if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
     session_start();
 
+    $db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
+    if ($db->connect_error) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'Ошибка БД']);
+        exit;
+    }
+    $db->set_charset('utf8mb4');
+
+    $user_id = resolveUserId($db);
+    $db->close();
+
     $data = [
         'niche'   => $_POST['niche']   ?? '',
         'phone'   => $_POST['phone']   ?? '',
         'product' => $_POST['product'] ?? '',
-        'user_id' => $_SESSION['user_id'] ?? 0,
+        'user_id' => $user_id,
     ];
 
+    header('Content-Type: application/json; charset=utf-8');
     echo json_encode(createSite($data), JSON_UNESCAPED_UNICODE);
 }
