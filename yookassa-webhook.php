@@ -7,15 +7,25 @@ ini_set('log_errors', 1);
 header('Content-Type: application/json; charset=utf-8');
 
 // ============================================
-// ПРОВЕРКА IP ЮKASSA
+// ЛОГ
+// ============================================
+const LOG_FILE = '/var/www/multisitex.com/yookassa.log';
+
+function log_msg(string $msg): void
+{
+    @file_put_contents(LOG_FILE, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
+}
+
+// ============================================
+// ПРОВЕРКА IP YOOMONEY / ЮKASSA
 // ============================================
 $allowed_ips = [
-    '185.32.252.0/22',
+    '185.32.252.0/22',   // ЮKassa (старый)
+    '77.75.153.78',      // YooMoney
 ];
 
 $client_ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
 
-// Если несколько IP через запятую — берём первый
 if (strpos($client_ip, ',') !== false) {
     $client_ip = trim(explode(',', $client_ip)[0]);
 }
@@ -42,19 +52,22 @@ foreach ($allowed_ips as $range) {
 }
 
 if (!$ip_ok) {
-    error_log("webhook: bad IP: $client_ip");
+    log_msg("❌ bad IP: $client_ip");
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Forbidden']);
     exit;
 }
 
+log_msg("✅ IP OK: $client_ip");
+
 // ============================================
 // КОНФИГ
 // ============================================
-$dbCfgFile = '/var/www/multisitex.com/config/db.php';
+$dbCfgFile  = '/var/www/multisitex.com/config/db.php';
 $tariffFile = '/var/www/multisitex.com/config/tariffs.php';
 
 if (!file_exists($dbCfgFile) || !file_exists($tariffFile)) {
+    log_msg("❌ Config not found");
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Config not found']);
     exit;
@@ -67,17 +80,19 @@ $tariffs = require $tariffFile;
 // ВХОДЯЩИЕ ДАННЫЕ
 // ============================================
 $source = file_get_contents('php://input');
+log_msg("RAW: " . $source);
+
 $data = json_decode($source, true);
 
-file_put_contents('/tmp/yookassa.log', date('Y-m-d H:i:s') . ' ' . $source . "\n", FILE_APPEND);
-
 if (!is_array($data) || !isset($data['event'])) {
+    log_msg("❌ Invalid JSON");
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Invalid request']);
     exit;
 }
 
 if ($data['event'] !== 'payment.succeeded') {
+    log_msg("⏭ Skipped event: " . $data['event']);
     echo json_encode(['success' => true, 'skipped' => $data['event']]);
     exit;
 }
@@ -88,14 +103,14 @@ $amount    = (float)($data['object']['amount']['value'] ?? 0);
 $paymentId = trim($data['object']['id'] ?? '');
 
 if ($site === '' || $tariffKey === '' || $paymentId === '') {
-    file_put_contents('/tmp/yookassa.log', "❌ Нет site / tariff / paymentId\n", FILE_APPEND);
+    log_msg("❌ No metadata: site=$site, tariff=$tariffKey, paymentId=$paymentId");
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'No metadata']);
     exit;
 }
 
 if (!isset($tariffs[$tariffKey])) {
-    file_put_contents('/tmp/yookassa.log', "❌ Неизвестный тариф: $tariffKey\n", FILE_APPEND);
+    log_msg("❌ Unknown tariff: $tariffKey");
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Unknown tariff']);
     exit;
@@ -104,24 +119,27 @@ if (!isset($tariffs[$tariffKey])) {
 $expectedPrice = (float)$tariffs[$tariffKey]['price'];
 
 if ($amount < $expectedPrice) {
-    file_put_contents('/tmp/yookassa.log', "❌ Мало денег: $amount за $site (нужно $expectedPrice)\n", FILE_APPEND);
+    log_msg("❌ Amount too low: $amount < $expectedPrice (site=$site)");
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Amount too low']);
     exit;
 }
+
+log_msg("💰 Payment: site=$site, tariff=$tariffKey, amount=$amount, paymentId=$paymentId");
 
 // ============================================
 // БД
 // ============================================
 $db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
 if ($db->connect_error) {
-    file_put_contents('/tmp/yookassa.log', "❌ БД: " . $db->connect_error . "\n", FILE_APPEND);
+    log_msg("❌ DB: " . $db->connect_error);
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'DB error']);
     exit;
 }
 $db->set_charset('utf8mb4');
 
+// payments
 $stmt = $db->prepare("
     INSERT INTO payments (site, payment_id, amount, status)
     VALUES (?, ?, ?, 'succeeded')
@@ -131,22 +149,26 @@ if ($stmt) {
     $stmt->bind_param('ssd', $site, $paymentId, $amount);
     $stmt->execute();
     $stmt->close();
+    log_msg("✅ payments: INSERT/UPDATE $paymentId");
 } else {
-    file_put_contents('/tmp/yookassa.log', "⚠️ payments insert failed: " . $db->error . "\n", FILE_APPEND);
+    log_msg("⚠️ payments insert failed: " . $db->error);
 }
 
+// sites.tariff
 $stmt = $db->prepare("UPDATE sites SET tariff = ? WHERE domain = ?");
 $stmt->bind_param('ss', $tariffKey, $site);
 $stmt->execute();
 $affected = $stmt->affected_rows;
 $stmt->close();
 
-$db->close();
-
 if ($affected === 0) {
-    file_put_contents('/tmp/yookassa.log', "⚠️ sites UPDATE 0 rows: $site\n", FILE_APPEND);
+    log_msg("⚠️ sites UPDATE 0 rows: $site");
+} else {
+    log_msg("✅ sites.tariff = $tariffKey для $site");
 }
 
-file_put_contents('/tmp/yookassa.log', "✅ Активирован: $site, тариф $tariffKey, $amount ₽, $paymentId\n", FILE_APPEND);
+$db->close();
+
+log_msg("✅ DONE: $site, тариф $tariffKey, $amount ₽, $paymentId");
 
 echo json_encode(['success' => true]);
