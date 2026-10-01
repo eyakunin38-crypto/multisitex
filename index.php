@@ -5,11 +5,30 @@ header('Content-Type: text/html; charset=utf-8');
 mb_internal_encoding('UTF-8');
 session_start();
 
-// ===== Cookie для определения «новый/постоянный» =====
-if (empty($_COOKIE['visitor_id'])) {
-    $isReturning = false;
-} else {
-    $isReturning = true;
+// ===== Определение «новый/постоянный» + email =====
+$isReturning = false;
+$hasEmail    = false;
+
+if (!empty($_COOKIE['visitor_id'])) {
+    $dbCfgFile = '/var/www/multisitex.com/config/db.php';
+    if (file_exists($dbCfgFile)) {
+        $dbCfg = require $dbCfgFile;
+        $dbCheck = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
+        if (!$dbCheck->connect_error) {
+            $dbCheck->set_charset('utf8mb4');
+            $stmt = $dbCheck->prepare("SELECT id, email FROM users WHERE visitor_id = ?");
+            $stmt->bind_param('s', $_COOKIE['visitor_id']);
+            $stmt->execute();
+            $u = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            $dbCheck->close();
+
+            if ($u) {
+                $isReturning = true;
+                $hasEmail    = !empty($u['email']);
+            }
+        }
+    }
 }
 
 $lang = $_GET['lang'] ?? $_COOKIE['lang'] ?? 'ru';
@@ -488,6 +507,7 @@ $lang_data = $text[$lang] ?? $text['ru'];
     const LANG = <?= json_encode($lang, JSON_UNESCAPED_UNICODE) ?>;
     const TEXT = <?= json_encode($lang_data, JSON_UNESCAPED_UNICODE) ?>;
     const IS_RETURNING = <?= json_encode($isReturning) ?>;
+    const HAS_EMAIL    = <?= json_encode($hasEmail) ?>;
 
     const form         = document.getElementById('deployForm');
     const nicheSelect  = document.getElementById('nicheSelect');
@@ -558,9 +578,9 @@ $lang_data = $text[$lang] ?? $text['ru'];
                 goAdminBtn.href = result.admin_url;
                 siteReadyBlock.classList.remove('hidden');
 
-                // Для известного: кнопка «Перейти в админку» + «Создать ещё сайт»
-                // Для нового: блок с email
-                if (IS_RETURNING) {
+                // Для известного с email: без формы
+                // Иначе (новый или email NULL): форма
+                if (IS_RETURNING && HAS_EMAIL) {
                     emailSaveBlock.classList.add('hidden');
                     goAdminBtn.classList.remove('hidden');
                     createMoreBtn.classList.remove('hidden');
