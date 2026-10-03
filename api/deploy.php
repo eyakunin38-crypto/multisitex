@@ -187,17 +187,14 @@ function createSite(array $data, mysqli $db): array
     $res = $stmt->get_result();
     while ($r = $res->fetch_assoc()) {
         $t = $r['table_name'];
-        // Пропускаем служебные
         if (strpos($t, 'template_') === 0) continue;
         if (strpos($t, 'leads_') === 0) continue;
         $existingDomains[] = $t;
     }
     $stmt->close();
 
-    // Уникализируем
     $existingDomains = array_unique($existingDomains);
 
-    // Ищем максимальный номер
     $maxNumber = 0;
     foreach ($existingDomains as $d) {
         if (strpos($d, $niche) === 0) {
@@ -264,9 +261,6 @@ function createSite(array $data, mysqli $db): array
         return ['success' => false, 'error' => 'Ошибка копирования шаблона контента: ' . $db->error];
     }
 
-    // ============================================
-    // INSERT settings — с ON DUPLICATE KEY UPDATE
-    // ============================================
     $stmt = $db->prepare("
         INSERT INTO settings (domain, phone, whatsapp)
         VALUES (?, ?, ?)
@@ -384,8 +378,27 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
     }
     $db->set_charset('utf8mb4');
 
-    // Определяем пользователя ОДИН раз
+    // Определяем пользователя
     $user_id = resolveUserId($db);
+
+    // ============================================
+    // ЛИМИТ 3 САЙТА НА ПОЛЬЗОВАТЕЛЯ
+    // ============================================
+    $stmtLimit = $db->prepare("SELECT COUNT(*) AS cnt FROM sites WHERE user_id = ?");
+    $stmtLimit->bind_param('i', $user_id);
+    $stmtLimit->execute();
+    $countSites = (int)$stmtLimit->get_result()->fetch_assoc()['cnt'];
+    $stmtLimit->close();
+
+    if ($countSites >= 3) {
+        $db->close();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'error'   => 'На тестовом тарифе — 3 сайта. Хотите больше? Напишите в поддержку (чат в правом нижнем углу).'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
     $data = [
         'niche'   => $_POST['niche']   ?? '',
