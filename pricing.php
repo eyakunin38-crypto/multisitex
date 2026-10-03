@@ -20,9 +20,9 @@ $text = [
         'free_period' => 'навсегда',
         'free_features' => [
             'Создание сайтов за минуту',
-            'Сколько нужно сайтов — столько и создавайте',
-            'Подмена контента под UTM-метки',
-            'Определение региона лида',
+            'До 3 сайтов',
+            'Подмена заголовков под ключевик',
+            'Передача региона лида',
             'MultisiteX CRM — лиды со всех сайтов в одном месте',
             'Сбор заявок',
             'Админка для каждого сайта',
@@ -69,8 +69,8 @@ $text = [
         'free_period' => 'forever',
         'free_features' => [
             'Create sites in a minute',
-            'As many sites as you need',
-            'Content substitution by UTM tags',
+            'Up to 3 sites',
+            'Title substitution by keyword',
             'Lead region detection',
             'MultisiteX CRM — leads from all sites in one place',
             'Lead collection',

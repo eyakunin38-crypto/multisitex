@@ -29,9 +29,11 @@ if ($db->connect_error) {
 }
 $db->set_charset('utf8mb4');
 
-$error = '';
-$user  = null;
-$token = trim($_GET['token'] ?? $_POST['token'] ?? '');
+$error           = '';
+$error_link      = '';
+$error_link_text = '';
+$user            = null;
+$token           = trim($_GET['token'] ?? $_POST['token'] ?? '');
 
 // ============================================
 // 1. ПРОВЕРКА ТОКЕНА
@@ -53,7 +55,9 @@ if ($token === '') {
     if (!$user) {
         $error = 'Ссылка недействительна или уже использована.';
     } elseif ((int)$user['email_verified'] === 1) {
-        $error = 'Этот email уже активирован. Войдите в админку.';
+        $error = 'Этот email уже активирован.';
+        $error_link = '/login.php?email=' . urlencode((string)$user['email']);
+        $error_link_text = 'Войти в админку';
     } elseif (strtotime((string)$user['token_expires']) < time()) {
         $error = 'Ссылка истекла. Пройдите регистрацию заново.';
     }
@@ -258,6 +262,19 @@ header('Content-Type: text/html; charset=utf-8');
             display: block;
             margin-bottom: 12px;
         }
+        .error-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .error-link a {
+            display: inline-block;
+            background: #111;
+            color: #fff;
+            padding: 12px 24px;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .error-link a:hover { background: #333; }
     </style>
 </head>
 <body>
@@ -266,6 +283,13 @@ header('Content-Type: text/html; charset=utf-8');
         <span class="icon">⚠️</span>
         <h2>Не удалось активировать</h2>
         <p class="subtitle"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+        <?php if (!empty($error_link)): ?>
+            <div class="error-link">
+                <a href="<?= htmlspecialchars($error_link, ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($error_link_text, ENT_QUOTES, 'UTF-8') ?>
+                </a>
+            </div>
+        <?php endif; ?>
     <?php else: ?>
         <span class="icon">🔐</span>
         <h2>Создайте пароль</h2>
