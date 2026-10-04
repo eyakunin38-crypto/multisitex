@@ -60,7 +60,59 @@ $site = mysqli_fetch_assoc($result);
 
 if (!$site) {
     http_response_code(404);
-    die("❌ Сайт не найден: " . htmlspecialchars($domain));
+    ?>
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Сайт не найден — MultisiteX</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                background: #f5f7fa;
+                font-family: 'Inter', sans-serif;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .card {
+                background: #fff;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.02);
+                max-width: 480px;
+                width: 100%;
+                padding: 40px 32px;
+                text-align: center;
+            }
+            .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+            h2 { font-size: 28px; font-weight: 300; color: #111; margin-bottom: 8px; }
+            p { font-size: 14px; color: #888; margin-bottom: 24px; line-height: 1.5; }
+            .btn {
+                display: inline-block;
+                background: #111;
+                color: #fff;
+                padding: 14px 24px;
+                text-decoration: none;
+                font-size: 15px;
+            }
+            .btn:hover { background: #333; }
+        </style>
+    </head>
+    <body>
+    <div class="card">
+        <span class="icon">⚠️</span>
+        <h2>Сайт не найден</h2>
+        <p>Возможно, он был удалён.<br>Создайте свой сайт за минуту — это бесплатно.</p>
+        <a href="https://multisitex.com/" class="btn">Создать свой сайт</a>
+    </div>
+    </body>
+    </html>
+    <?php
+    exit;
 }
 
 // ============================================
