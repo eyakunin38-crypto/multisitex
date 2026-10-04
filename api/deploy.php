@@ -390,12 +390,12 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
     $countSites = (int)$stmtLimit->get_result()->fetch_assoc()['cnt'];
     $stmtLimit->close();
 
-    if ($countSites >= 3) {
+    if ($countSites >= 5) {
         $db->close();
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
             'success' => false,
-            'error'   => 'На тестовом тарифе — 3 сайта. Хотите больше? Напишите в поддержку (чат в правом нижнем углу).'
+            'error'   => 'На тестовом тарифе — 5 сайтов. Хотите больше? Напишите в поддержку (чат в правом нижнем углу).'
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
