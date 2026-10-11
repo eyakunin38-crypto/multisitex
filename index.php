@@ -59,7 +59,7 @@ $text = [
         'email_error'       => 'Не удалось активировать. Попробуйте позже.',
         'check_title'       => 'Проверьте почту',
         'check_sub'         => 'Мы отправили ссылку активации на',
-        'check_hint'        => 'Перейдите по ссылке в письме, чтобы завершить создание сайта. Ссылка действует 24 часа.',
+        'check_hint'        => 'Перейдите по ссылке в письме, чтобы завершить создание сайта. Ссылка действует 7 дней.',
         'already_account'   => 'Уже есть аккаунт? Войти',
         'cancel'            => 'Отмена',
         'pricing_link'      => 'Тарифы',
@@ -71,7 +71,7 @@ $text = [
         'open_btn'          => 'Открыть',
         'adaptive_btn'      => 'Проверить адаптивность',
         'save_email_title'  => 'Хотите получать заявки?',
-        'save_email_sub'    => 'Укажите email — будем присылать заявки с сайта',
+        'save_email_sub'    => 'Укажите email — будем присылать заявки. Без email сайт удалится через 7 дней.',
         'save_email_btn'    => 'Сохранить',
         'skip_email'        => 'Пропустить',
         'go_admin_btn'      => 'Перейти в админку',
@@ -101,7 +101,7 @@ $text = [
         'email_error'       => 'Could not activate. Try again later.',
         'check_title'       => 'Check your email',
         'check_sub'         => 'We sent an activation link to',
-        'check_hint'        => 'Follow the link in the email to finish creating your site. The link is valid for 24 hours.',
+        'check_hint'        => 'Follow the link in the email to finish creating your site. The link is valid for 7 days.',
         'already_account'   => 'Already have an account? Log in',
         'cancel'            => 'Cancel',
         'pricing_link'      => 'Pricing',
@@ -113,7 +113,7 @@ $text = [
         'open_btn'          => 'Open',
         'adaptive_btn'      => 'Check adaptability',
         'save_email_title'  => 'Want to receive leads?',
-        'save_email_sub'    => 'Enter email — we will send leads from your site',
+        'save_email_sub'    => 'Enter email — we will send leads. Without email, the site will be deleted in 7 days.',
         'save_email_btn'    => 'Save',
         'skip_email'        => 'Skip',
         'go_admin_btn'      => 'Go to admin',
@@ -615,7 +615,7 @@ $lang_data = $text[$lang] ?? $text['ru'];
     });
 
     document.getElementById('skipEmailBtn').addEventListener('click', function() {
-        // Пользователь пропустил email — сайт работает 24 часа
+        // Пользователь пропустил email — сайт работает 7 дней
         siteReadyBlock.classList.add('hidden');
         formBlock.classList.remove('hidden');
         form.reset();
