@@ -20,7 +20,7 @@ $text = [
         'free_period' => 'навсегда',
         'free_features' => [
             'Создание сайтов за минуту',
-            'До 3 сайтов',
+            'До 5 сайтов',
             'Подмена заголовков под ключевик',
             'Передача региона лида',
             'MultisiteX CRM — лиды со всех сайтов в одном месте',
@@ -69,7 +69,7 @@ $text = [
         'free_period' => 'forever',
         'free_features' => [
             'Create sites in a minute',
-            'Up to 3 sites',
+            'Up to 5 sites',
             'Title substitution by keyword',
             'Lead region detection',
             'MultisiteX CRM — leads from all sites in one place',
