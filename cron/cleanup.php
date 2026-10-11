@@ -13,6 +13,7 @@ if (!file_exists($dbCfgFile)) {
 $dbCfg = require $dbCfgFile;
 
 const SITES_PATH = '/var/www/multisitex.com/sites';
+const CLEANUP_DAYS = 7;
 
 $db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
 if ($db->connect_error) {
@@ -33,7 +34,7 @@ $sql = "
     JOIN users u ON u.id = s.user_id
     WHERE u.email IS NULL
       AND s.tariff = 'test'
-      AND s.created_at < NOW() - INTERVAL 24 HOUR
+      AND s.created_at < NOW() - INTERVAL " . CLEANUP_DAYS . " DAY
 ";
 
 $result = $db->query($sql);
@@ -47,7 +48,7 @@ while ($row = $result->fetch_assoc()) {
     $candidates[] = $row;
 }
 
-$log[] = "Found " . count($candidates) . " candidates";
+$log[] = "Found " . count($candidates) . " candidates (older than " . CLEANUP_DAYS . " days)";
 
 // ============================================
 // 2. УДАЛИТЬ КАЖДЫЙ
@@ -96,27 +97,17 @@ foreach ($candidates as $site) {
 }
 
 // ============================================
-// 3. УДАЛИТЬ USERS БЕЗ EMAIL (если нет сайтов)
+// USERS НЕ УДАЛЯЕМ
 // ============================================
-$sql = "
-    DELETE FROM users
-    WHERE email IS NULL
-      AND id NOT IN (SELECT DISTINCT user_id FROM sites)
-";
-
-$db->query($sql);
-$usersDeleted = $db->affected_rows;
-
-$log[] = "Deleted users without sites: $usersDeleted";
 
 $db->close();
 
 // ============================================
 // 4. ЛОГ
 // ============================================
-$logText = date('Y-m-d H:i:s') . " — deleted $deleted sites, $usersDeleted users\n";
+$logText = date('Y-m-d H:i:s') . " — deleted $deleted sites\n";
 $logText .= implode("\n", $log) . "\n\n";
 
 file_put_contents('/var/log/multisitex-cleanup.log', $logText, FILE_APPEND);
 
-echo "✅ Deleted: $deleted sites, $usersDeleted users\n";
+echo "✅ Deleted: $deleted sites\n";
