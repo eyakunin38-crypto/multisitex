@@ -4,10 +4,24 @@ header('Content-Type: text/html; charset=utf-8');
 mb_internal_encoding('UTF-8');
 session_start();
 
-$db = new mysqli('localhost', 'multisitex_user', 'Mbx7gt8123!', 'multisitex_db');
+$dbCfg = require '/var/www/multisitex.com/config/db.php';
+$db = new mysqli($dbCfg['host'], $dbCfg['user'], $dbCfg['pass'], $dbCfg['name']);
 $db->set_charset('utf8mb4');
 
 $error = '';
+
+// ===== Сообщение по reason =====
+$reason = $_GET['reason'] ?? '';
+$notice = '';
+
+if ($reason === 'exists') {
+    $notice = 'Этот email уже зарегистрирован. Войдите.';
+} elseif ($reason === 'verified') {
+    $notice = 'Этот email уже активирован. Войдите.';
+}
+
+// ===== Предзаполнение email из ?email= =====
+$email_prefill = trim($_GET['email'] ?? '');
 
 $redirect = trim($_POST['redirect'] ?? $_GET['redirect'] ?? '/');
 
@@ -38,7 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = (int)$user['id'];
             session_regenerate_id(true);
 
-            $db->query("UPDATE users SET last_login = NOW() WHERE id = " . (int)$user['id']);
+            $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+            $stmt->bind_param('i', $user['id']);
+            $stmt->execute();
+            $stmt->close();
 
             if ($redirect === '/' || $redirect === '/index.php') {
                 $userId = (int)$user['id'];
@@ -142,6 +159,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-align: center;
             margin-bottom: 20px;
         }
+        .notice {
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -151,6 +177,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <?php if ($error !== ''): ?>
         <div class="error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
+    <?php elseif (!empty($notice)): ?>
+        <div class="notice"><?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
     <form method="POST">
@@ -158,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-group">
             <label class="form-label">Email</label>
             <input type="email" name="email" class="form-control" required
-                   value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                   value="<?= htmlspecialchars($_POST['email'] ?? $email_prefill, ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <div class="form-group">
             <label class="form-label">Пароль</label>
