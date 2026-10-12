@@ -85,9 +85,27 @@ if ($other) {
     exit;
 }
 
-// ===== Токен =====
+// ===== Проверка: email уже verified у ТЕКУЩЕГО users? =====
+if ($user_id > 0) {
+    $stmt = $db->prepare("SELECT email_verified FROM users WHERE id = ? AND email = ? LIMIT 1");
+    $stmt->bind_param('is', $user_id, $email);
+    $stmt->execute();
+    $me = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($me && (int)$me['email_verified'] === 1) {
+        echo json_encode([
+            'success'  => false,
+            'redirect' => '/login.php?email=' . urlencode($email) . '&reason=verified',
+            'error'    => 'Этот email уже активирован. Войдите.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// ===== Токен (7 дней) =====
 $token   = bin2hex(random_bytes(32));
-$expires = date('Y-m-d H:i:s', time() + 86400); // 24 часа
+$expires = date('Y-m-d H:i:s', time() + 7 * 86400);
 
 // ===== Логика =====
 if ($user_id > 0) {
@@ -119,13 +137,13 @@ if ($user_id > 0) {
 
 $db->close();
 
-// ===== Письмо активации =====
+// ===== Письмо активации (7 дней) =====
 $link = "https://multisitex.com/activate.php?token=" . urlencode($token);
 $body = "Здравствуйте!\n\n"
       . "Вы начали создание сайта в Multisitex.\n"
       . "Чтобы завершить — перейдите по ссылке:\n\n"
       . "$link\n\n"
-      . "Ссылка действует 24 часа.\n\n"
+      . "Ссылка действует 7 дней.\n\n"
       . "Если вы не запрашивали — просто проигнорируйте это письмо.\n\n"
       . "Multisitex";
 
