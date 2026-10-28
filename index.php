@@ -433,7 +433,6 @@ $lang_data = $text[$lang] ?? $text['ru'];
                                 <?= htmlspecialchars($niche['title'], ENT_QUOTES, 'UTF-8') ?>
                             </option>
                         <?php endforeach; ?>
-                        <option value="custom"><?= htmlspecialchars($lang_data['custom_option'], ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
                 </div>
 
