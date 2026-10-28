@@ -25,12 +25,10 @@ const TEMPLATES_PATH = '/var/www/multisitex.com/templates';
 // ============================================
 function resolveUserId(mysqli $db): int
 {
-    // 1. Сессия
     if (!empty($_SESSION['user_id'])) {
         return (int)$_SESSION['user_id'];
     }
 
-    // 2. Куки
     if (!empty($_COOKIE['visitor_id'])) {
         $visitor_id = $_COOKIE['visitor_id'];
         $stmt = $db->prepare("SELECT id FROM users WHERE visitor_id = ?");
@@ -45,7 +43,6 @@ function resolveUserId(mysqli $db): int
         }
     }
 
-    // 3. Новый
     $visitor_id = bin2hex(random_bytes(16));
     $stmt = $db->prepare("INSERT INTO users (visitor_id) VALUES (?)");
     $stmt->bind_param('s', $visitor_id);
@@ -118,6 +115,18 @@ function createSite(array $data, mysqli $db): array
         $stmt->execute();
         $stmt->close();
 
+        // settings — для custom
+        $stmt = $db->prepare("
+            INSERT INTO settings (domain, phone, whatsapp)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                phone = VALUES(phone),
+                whatsapp = VALUES(whatsapp)
+        ");
+        $stmt->bind_param('sss', $domain, $phone, $phone);
+        $stmt->execute();
+        $stmt->close();
+
         $stmt = $db->prepare("INSERT INTO leads (phone, niche, domain, product, created_at) VALUES (?, ?, ?, ?, NOW())");
         $stmt->bind_param('ssss', $phone, $niche, $domain, $product);
         $stmt->execute();
@@ -152,12 +161,9 @@ function createSite(array $data, mysqli $db): array
         return ['success' => false, 'error' => "Папка шаблона не найдена: $templatePath"];
     }
 
-    // ============================================
     // Поиск свободного номера
-    // ============================================
     $existingDomains = [];
 
-    // 1. Из sites
     $stmt = $db->prepare("SELECT domain FROM sites WHERE niche = ?");
     $stmt->bind_param('s', $niche);
     $stmt->execute();
@@ -167,7 +173,6 @@ function createSite(array $data, mysqli $db): array
     }
     $stmt->close();
 
-    // 2. Из settings
     $stmt = $db->prepare("SELECT domain FROM settings WHERE domain LIKE ?");
     $like = $niche . '%';
     $stmt->bind_param('s', $like);
@@ -178,7 +183,6 @@ function createSite(array $data, mysqli $db): array
     }
     $stmt->close();
 
-    // 3. Из таблиц {domain}
     $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_name LIKE ?");
     $dbName = 'multisitex_db';
     $likeTable = $niche . '%';
@@ -207,9 +211,6 @@ function createSite(array $data, mysqli $db): array
     $domain = $niche . $nextNumber;
     $clientPath = SITES_PATH . '/' . $domain;
 
-    // ============================================
-    // Цикл — пока не найдём свободное имя
-    // ============================================
     $attempts = 0;
     while (
         in_array($domain, $existingDomains, true) ||
@@ -378,12 +379,9 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
     }
     $db->set_charset('utf8mb4');
 
-    // Определяем пользователя
     $user_id = resolveUserId($db);
 
-    // ============================================
-    // ЛИМИТ 3 САЙТА НА ПОЛЬЗОВАТЕЛЯ
-    // ============================================
+    // Лимит 5 сайтов
     $stmtLimit = $db->prepare("SELECT COUNT(*) AS cnt FROM sites WHERE user_id = ?");
     $stmtLimit->bind_param('i', $user_id);
     $stmtLimit->execute();
