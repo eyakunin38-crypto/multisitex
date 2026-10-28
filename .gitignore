@@ -16,3 +16,5 @@ sites/
 .idea/
 config/yookassa.php
 api/.user.ini
+config/auth.php
+config/auth.php
