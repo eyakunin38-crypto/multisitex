@@ -45,7 +45,18 @@ if ($user_id <= 0) {
 }
 
 // ============================================
-// 2. СПИСОК САЙТОВ ПОЛЬЗОВАТЕЛЯ
+// 2. EMAIL ПОЛЬЗОВАТЕЛЯ
+// ============================================
+$userEmail = null;
+$stmt = mysqli_prepare($connect, "SELECT email FROM users WHERE id = ?");
+mysqli_stmt_bind_param($stmt, 'i', $user_id);
+mysqli_stmt_execute($stmt);
+$u = mysqli_stmt_get_result($stmt)->fetch_assoc();
+mysqli_stmt_close($stmt);
+$userEmail = $u['email'] ?? null;
+
+// ============================================
+// 3. СПИСОК САЙТОВ ПОЛЬЗОВАТЕЛЯ
 // ============================================
 $sites = [];
 $stmt = mysqli_prepare($connect, "SELECT * FROM sites WHERE user_id = ? ORDER BY created_at DESC");
@@ -58,18 +69,13 @@ while ($row = $res->fetch_assoc()) {
 mysqli_stmt_close($stmt);
 
 if (empty($sites)) {
-    // Нет сайтов — создать
     header('Location: /');
     exit;
 }
 
 // ============================================
-// 3. ТЕКУЩИЙ САЙТ
+// 4. ТЕКУЩИЙ САЙТ
 // ============================================
-// Приоритет:
-//   1. ?site=domain
-//   2. /sites/{domain}/admin.php (из URL)
-//   3. первый сайт
 $urlDomain = null;
 if (preg_match('#/sites/([^/]+)/#', $_SERVER['REQUEST_URI'] ?? '', $m)) {
     $urlDomain = $m[1];
@@ -86,17 +92,27 @@ foreach ($sites as $s) {
 }
 
 $siteNotFound = false;
+$sitePhone = '';
+$table = '';
+$leadsTable = '';
 
 if (!$site) {
-    // Сайт не найден у пользователя
     $siteNotFound = true;
 } else {
     $table = $site['content_table'];
     $leadsTable = 'leads_' . $domain;
+
+    // Телефон сайта (для формы email)
+    $stmt = mysqli_prepare($connect, "SELECT phone FROM settings WHERE domain = ? LIMIT 1");
+    mysqli_stmt_bind_param($stmt, 's', $domain);
+    mysqli_stmt_execute($stmt);
+    $s = mysqli_stmt_get_result($stmt)->fetch_assoc();
+    mysqli_stmt_close($stmt);
+    $sitePhone = $s['phone'] ?? '';
 }
 
 // ============================================
-// 4. ОБРАБОТКА ДОБАВЛЕНИЯ
+// 5. ОБРАБОТКА ДОБАВЛЕНИЯ
 // ============================================
 if ($site && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_element'])) {
     $keyword = mysqli_real_escape_string($connect, $_POST['new_keyword'] ?? '');
@@ -117,7 +133,7 @@ if ($site && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_element'
 }
 
 // ============================================
-// 5. ОБРАБОТКА РЕДАКТИРОВАНИЯ
+// 6. ОБРАБОТКА РЕДАКТИРОВАНИЯ
 // ============================================
 if ($site && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_element'])) {
     $id      = (int)($_POST['edit_id'] ?? 0);
@@ -142,7 +158,7 @@ if ($site && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_element
 }
 
 // ============================================
-// 6. ОБРАБОТКА УДАЛЕНИЯ
+// 7. ОБРАБОТКА УДАЛЕНИЯ
 // ============================================
 if ($site && isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     $id = (int)$_GET['delete'];
@@ -151,7 +167,7 @@ if ($site && isset($_GET['delete']) && is_numeric($_GET['delete'])) {
 }
 
 // ============================================
-// 7. КОНТЕНТ И ЛИДЫ
+// 8. КОНТЕНТ И ЛИДЫ
 // ============================================
 $content = [];
 $leads = [];
@@ -170,6 +186,24 @@ if ($site) {
 
 $siteUrl = "https://" . $_SERVER['HTTP_HOST'] . "/sites/" . ($site['domain'] ?? '');
 
+// ============================================
+// 9. ОФФЕРЫ — РОТАЦИЯ
+// ============================================
+$offer = null;
+if ($site) {
+    $offerStmt = mysqli_prepare($connect, "
+        SELECT * FROM offers
+        WHERE active = 1
+          AND (tariff_show = ? OR tariff_show = 'all')
+        ORDER BY RAND() * weight DESC
+        LIMIT 1
+    ");
+    mysqli_stmt_bind_param($offerStmt, 's', $site['tariff']);
+    mysqli_stmt_execute($offerStmt);
+    $offer = mysqli_stmt_get_result($offerStmt)->fetch_assoc();
+    mysqli_stmt_close($offerStmt);
+}
+
 mysqli_close($connect);
 ?>
 <!DOCTYPE html>
@@ -182,8 +216,6 @@ mysqli_close($connect);
     <style>
         body { background: #f5f7fa; padding: 12px; font-family: 'Inter', sans-serif; }
         .layout { display: flex; gap: 16px; max-width: 1500px; margin: 0 auto; }
-
-        /* Левая колонка */
         .sidebar {
             width: 260px;
             flex-shrink: 0;
@@ -233,11 +265,7 @@ mysqli_close($connect);
             font-size: 14px;
         }
         .sidebar .btn-create:hover { background: #333; }
-
-        /* Правая колонка */
         .main { flex: 1; min-width: 0; }
-
-        /* Бургер */
         .burger-btn {
             display: none;
             background: #111;
@@ -251,22 +279,18 @@ mysqli_close($connect);
         }
         @media (max-width: 768px) {
             .layout { flex-direction: column; }
-            .sidebar {
-                display: none;
-                width: 100%;
-                max-height: none;
-                position: static;
-            }
+            .sidebar { display: none; width: 100%; max-height: none; position: static; }
             .sidebar.open { display: block; }
             .burger-btn { display: inline-block; }
         }
-
         .card { border-radius: 16px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 16px; }
         .card-header { background: transparent; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; font-size: 16px; }
         .card-body { padding: 20px; }
         .table th { font-weight: 600; font-size: 13px; color: #555; }
         .tariff-banner { background: #fff8e1; padding: 14px; border-radius: 12px; border-left: 4px solid #f5a623; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 14px; }
         .tariff-banner .btn { background: #111; color: #fff; border: none; padding: 8px 20px; border-radius: 60px; text-decoration: none; font-size: 13px; }
+        .email-banner { background: #eff6ff; padding: 14px; border-radius: 12px; border-left: 4px solid #1e40af; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 14px; }
+        .email-banner .btn { background: #1e40af; color: #fff; border: none; padding: 8px 20px; border-radius: 60px; text-decoration: none; font-size: 13px; }
         .not-found { text-align: center; padding: 60px 20px; }
         .not-found .icon { font-size: 64px; margin-bottom: 16px; display: block; }
         .not-found h2 { font-size: 28px; font-weight: 300; }
@@ -328,14 +352,36 @@ mysqli_close($connect);
                 </div>
             </div>
 
-            <!-- Офферы (пока фиксированный) -->
-            <?php if (($site['tariff'] ?? '') === 'test'): ?>
+            <!-- Email-баннер (если email нет) -->
+            <?php if (empty($userEmail)): ?>
+                <div class="email-banner">
+                    <div>
+                        <strong>📩 Укажите email — иначе сайт удалится через 7 дней</strong><br>
+                        <span class="text-muted small">Без email вы не сможете получать заявки и войти с другого устройства.</span>
+                    </div>
+                    <button class="btn" data-bs-toggle="modal" data-bs-target="#emailModal">Указать email</button>
+                </div>
+            <?php endif; ?>
+
+            <!-- Оффер (ротация) -->
+            <?php if ($offer): ?>
+                <?php
+                $offerUrl = $offer['url'];
+                if ($offer['type'] === 'internal') {
+                    $offerUrl = str_replace('{site}', urlencode($site['domain']), $offerUrl);
+                }
+                ?>
                 <div class="tariff-banner">
                     <div>
-                        <strong>🚀 Активируйте тариф «Старт»</strong> — 4 990 ₽/мес<br>
-                        <span class="text-muted small">Убирайте клеймо, загружайте свои картинки, смотрите аналитику</span>
+                        <strong><?= htmlspecialchars($offer['title']) ?></strong><br>
+                        <span class="text-muted small"><?= htmlspecialchars($offer['description']) ?></span>
                     </div>
-                    <a href="/pay.php?site=<?= urlencode($site['domain']) ?>&tariff=start" class="btn">Активировать тариф</a>
+                    <a href="<?= htmlspecialchars($offerUrl) ?>"
+                       class="btn"
+                       target="<?= $offer['type'] === 'partner' ? '_blank' : '_self' ?>"
+                       rel="noopener">
+                        Перейти
+                    </a>
                 </div>
             <?php endif; ?>
 
@@ -539,6 +585,29 @@ mysqli_close($connect);
     </div>
 </div>
 
+<!-- Модалка email -->
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📩 Указать email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="emailForm">
+                <div class="modal-body">
+                    <p class="text-muted small">Мы отправим ссылку для активации. Без email сайт удалится через 7 дней.</p>
+                    <input type="email" id="newEmail" class="form-control" placeholder="you@example.com" required>
+                    <div class="text-danger small mt-2" id="emailError"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-dark">Отправить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', function () {
@@ -554,6 +623,41 @@ mysqli_close($connect);
             document.getElementById('edit_sort').value = this.dataset.sort || 0;
             document.getElementById('edit_active').value = this.dataset.active || 1;
         });
+    });
+
+    document.getElementById('emailForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('newEmail').value.trim();
+        const err = document.getElementById('emailError');
+        err.textContent = '';
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            err.textContent = 'Введите корректный email';
+            return;
+        }
+
+        const data = new FormData();
+        data.append('email', email);
+        data.append('niche', '<?= htmlspecialchars($site['niche'] ?? '') ?>');
+        data.append('phone', '<?= htmlspecialchars($sitePhone) ?>');
+        data.append('product', '');
+
+        try {
+            const res = await fetch('/api/register.php', { method: 'POST', body: data });
+            const result = await res.json();
+
+            if (result.success) {
+                window.location.href = '/?check=1&email=' + encodeURIComponent(email);
+            } else {
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                    return;
+                }
+                err.textContent = result.error || 'Ошибка';
+            }
+        } catch (e) {
+            err.textContent = 'Ошибка сети';
+        }
     });
 </script>
 
