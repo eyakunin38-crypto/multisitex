@@ -33,6 +33,17 @@ if ($niche === '') {
     echo json_encode(['success' => false, 'error' => 'Выберите нишу'], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+// ===== ЗАКРЫТИЕ ДЫРЫ: нормализация email (убираем +адресацию) =====
+$email = trim($_POST['email'] ?? '');
+if (strpos($email, '@') !== false) {
+    [$local, $domain] = explode('@', $email, 2);
+    if (($pos = strpos($local, '+')) !== false) {
+        $local = substr($local, 0, $pos);
+    }
+    $email = $local . '@' . $domain;
+}
+
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['success' => false, 'error' => 'Некорректный email'], JSON_UNESCAPED_UNICODE);
     exit;
@@ -76,12 +87,22 @@ $other = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if ($other) {
-    // Email занят другим пользователем
-    echo json_encode([
-        'success'  => false,
-        'redirect' => '/login.php?email=' . urlencode($email) . '&reason=exists',
-        'error'    => 'Этот email уже зарегистрирован. Войдите.'
-    ], JSON_UNESCAPED_UNICODE);
+    // Email занят другим пользователем.
+    // ВАЖНО: не раскрываем, занят он или нет (чтобы не было перебора).
+    // Но для UX, если email уже подтвержден — отправляем на вход.
+    if ((int)$other['email_verified'] === 1) {
+        echo json_encode([
+            'success'  => false,
+            'redirect' => '/login.php?email=' . urlencode($email) . '&reason=exists',
+            'error'    => 'Этот email уже зарегистрирован. Войдите.'
+        ], JSON_UNESCAPED_UNICODE);
+    } else {
+        // Email есть у другого, но не подтвержден — не раскрываем детали
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Если email свободен, мы отправили письмо.'
+        ], JSON_UNESCAPED_UNICODE);
+    }
     exit;
 }
 
@@ -117,18 +138,27 @@ if ($user_id > 0) {
         WHERE id = ?
     ");
     $stmt->bind_param('ssssssi', $email, $phoneClean, $token, $expires, $niche, $product, $user_id);
-    $stmt->execute();
+
+    if (!$stmt->execute()) {
+        error_log('REGISTER UPDATE FAILED: ' . $stmt->error);
+        echo json_encode(['success' => false, 'error' => 'Ошибка сохранения'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     $stmt->close();
 } else {
     // Fallback — нет сессии, нет куки
-    // Создаём нового users (не должно происходить, если deploy.php работал)
     $tempHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
     $stmt = $db->prepare("
         INSERT INTO users (email, phone, password, email_verified, email_token, token_expires, pending_niche, pending_product)
         VALUES (?, ?, ?, 0, ?, ?, ?, ?)
     ");
     $stmt->bind_param('sssssss', $email, $phoneClean, $tempHash, $token, $expires, $niche, $product);
-    $stmt->execute();
+
+    if (!$stmt->execute()) {
+        error_log('REGISTER INSERT FAILED: ' . $stmt->error);
+        echo json_encode(['success' => false, 'error' => 'Ошибка сохранения'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     $user_id = (int)$db->insert_id;
     $stmt->close();
 
