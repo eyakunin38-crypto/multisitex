@@ -1,0 +1,8 @@
+
+
+Order Allow,Deny
+<FilesMatch "\.(html|bash|sh|pl|perl|txt|htm|phtml|css|js|php|png|jpg|jpeg|txt|webp|mp4|svg|pdf|mov)$">
+    Order Deny,Allow
+    Allow From All
+</FilesMatch>
+

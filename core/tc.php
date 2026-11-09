@@ -1,6 +1,8 @@
 <?php
 // ============================================
-// tc.php — шаблонизатор для мультисайта
+// tc.php — шаблонизатор для мультисайта (v2, безопасный)
+// Изменения: экранирование значений, одна замена за проход,
+// путь к файлу не показывается посетителю, домен проверяется.
 // ============================================
 
 class tc {
@@ -10,42 +12,53 @@ class tc {
     public $errorMessage;
 
     function Fill() {
-        // 1. Ищем шаблон в папке сайта
-        $templateFile = __DIR__ . '/../sites/' . $this->domain . '/templates/' . $this->templateName . '.html';
-
-        // 2. Если нет — ищем index.html в папке сайта
-        if (!file_exists($templateFile)) {
-            $templateFile = __DIR__ . '/../sites/' . $this->domain . '/templates/index.html';
+        // Имена только из безопасных символов
+        $domain = preg_replace('/[^a-zA-Z0-9.\-]/', '', (string)$this->domain);
+        $name   = preg_replace('/[^a-zA-Z0-9_\-]/', '', (string)$this->templateName);
+        if ($domain === '' || $name === '') {
+            error_log('tc: empty domain or template name');
+            return 'Ошибка шаблона';
         }
 
-        // 3. Если нет — ищем в глобальной папке ниши
+        $base = __DIR__ . '/..';
+
+        // 1. Шаблон в папке сайта
+        $templateFile = "$base/sites/$domain/templates/$name.html";
+
+        // 2. index.html в папке сайта
         if (!file_exists($templateFile)) {
-            $templateFile = __DIR__ . '/../templates/' . $this->templateName . '.html';
+            $templateFile = "$base/sites/$domain/templates/index.html";
         }
 
-        // 4. Если нет — берём main.html из default
+        // 3. Глобальный шаблон
         if (!file_exists($templateFile)) {
-            $templateFile = __DIR__ . '/../templates/default/main.html';
+            $templateFile = "$base/templates/$name.html";
         }
 
-        // 5. Если и main.html нет — ошибка
+        // 4. default/main.html
         if (!file_exists($templateFile)) {
-            return "❌ Шаблон не найден: " . $templateFile;
+            $templateFile = "$base/templates/default/main.html";
+        }
+
+        // 5. Ничего нет
+        if (!file_exists($templateFile)) {
+            error_log('tc: template not found for ' . $domain);
+            return 'Шаблон не найден';
         }
 
         $html = file_get_contents($templateFile);
-
         if ($html === false) {
-            return "❌ Не удалось прочитать шаблон: " . $templateFile;
+            error_log('tc: cannot read ' . $templateFile);
+            return 'Ошибка шаблона';
         }
 
-        // Подставляем контент (только современные теги {Tag})
-        foreach ($this->content as $tag => $value) {
-            $html = str_replace('{' . $tag . '}', $value, $html);
+        // Все значения экранируются, замена за один проход:
+        // значение с текстом {Phone} уже не подменится повторно.
+        $map = [];
+        foreach ((array)$this->content as $tag => $value) {
+            $map['{' . $tag . '}'] = htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         }
 
-        // Возвращаем HTML строкой (а не echo)
-        return $html;
+        return strtr($html, $map);
     }
 }
-?>
